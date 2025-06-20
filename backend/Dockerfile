@@ -1,9 +1,13 @@
 # =======================================================
-#  ФИНАЛЬНАЯ ВЕРСИЯ DOCKERFILE ДЛЯ BACKEND (v3 - исправленная)
+#  ФИНАЛЬНАЯ ВЕРСИЯ DOCKERFILE ДЛЯ BACKEND (v4 - с фиксом OpenSSL)
 # =======================================================
 
 # Этап 1: Установка ВСЕХ зависимостей
 FROM node:18-alpine AS deps
+
+# <<< НОВАЯ СТРОКА: Устанавливаем пакет совместимости для OpenSSL 1.1 >>>
+RUN apk add openssl1.1-compat
+
 WORKDIR /app
 COPY backend/package.json backend/package-lock.json* ./
 RUN npm install
@@ -23,14 +27,11 @@ FROM node:18-alpine AS runner
 WORKDIR /app
 ENV NODE_ENV=production
 
-# <<< ГЛАВНОЕ ИСПРАВЛЕНИЕ: Копируем node_modules из этапа 'builder', а не 'deps' >>>
-# Теперь здесь будут и основные зависимости, и сгенерированный Prisma Client.
+# <<< НОВАЯ СТРОКА: Устанавливаем пакет совместимости и в финальный образ >>>
+RUN apk add openssl1.1-compat
+
 COPY --from=builder /app/node_modules ./node_modules
-
-# Копируем скомпилированный код приложения
 COPY --from=builder /app/backend/dist ./
-
-# Копируем файлы, нужные для Prisma и для запуска скриптов
 COPY backend/package.json ./
 COPY --from=builder /app/prisma ./prisma
 COPY backend/scripts ./scripts
