@@ -15,7 +15,8 @@ services:
   # <<< НОВЫЙ СЕРВИС ДЛЯ БЭКЕНДА >>>
   backend:
     build:
-      context: ./backend # Указываем, что Dockerfile находится в папке backend
+    context: .  # <-- Указываем корень проекта как контекст
+    dockerfile: ./backend/Dockerfile # <-- Указываем путь к Dockerfile
     restart: always
     depends_on:
       - db

@@ -1,34 +1,40 @@
-# Этап 1: Установка ВСЕХ зависимостей (включая dev-зависимости)
+# =======================================================
+#  ФИНАЛЬНАЯ ВЕРСИЯ DOCKERFILE ДЛЯ BACKEND (MONOREPO)
+# =======================================================
+
+# Этап 1: Установка зависимостей
 FROM node:18-alpine AS deps
 WORKDIR /app
-COPY package.json package-lock.json* ./
+# Контекст сборки теперь корень проекта, поэтому указываем полный путь
+COPY backend/package.json backend/package-lock.json* ./
 RUN npm install
 
 # Этап 2: Сборка TypeScript в JavaScript
 FROM node:18-alpine AS builder
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
-COPY . .
-RUN npm run build
+# Копируем папку backend и папку prisma
+COPY backend ./backend
+COPY prisma ./prisma
+# Запускаем сборку, находясь в папке backend
+RUN cd backend && npm run build
 
-# Этап 3: Финальный образ для запуска (теперь с файлами для Prisma)
+# Этап 3: Финальный образ для запуска
 FROM node:18-alpine AS runner
 WORKDIR /app
 ENV NODE_ENV=production
 
-# Копируем ВСЕ зависимости (включая dev, нужные для Prisma CLI и ts-node)
+# Копируем зависимости
 COPY --from=deps /app/node_modules ./node_modules
 
-# Копируем скомпилированный код приложения
-COPY --from=builder /app/dist ./dist
+# Копируем скомпилированный код из папки dist бэкенда
+COPY --from=builder /app/backend/dist ./dist
 
-# <<< НОВЫЕ СТРОКИ: Копируем файлы, нужные для Prisma и скриптов >>>
-COPY package.json ./
+# Копируем файлы, нужные для Prisma и для запуска скриптов
+COPY backend/package.json ./
 COPY --from=builder /app/prisma ./prisma
-COPY scripts ./scripts
-COPY tsconfig.json ./
+COPY backend/scripts ./scripts
+COPY backend/tsconfig.json ./
 
 EXPOSE 5000
-
-# Команда по умолчанию остается прежней - запуск веб-сервера
 CMD [ "node", "dist/server.js" ]
