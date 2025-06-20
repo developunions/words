@@ -24,7 +24,7 @@ COPY --from=builder /app/dist ./dist
 
 # <<< НОВЫЕ СТРОКИ: Копируем файлы, нужные для Prisma и скриптов >>>
 COPY package.json ./
-COPY prisma ./prisma
+COPY --from=builder /app/prisma ./prisma
 COPY scripts ./scripts
 COPY tsconfig.json ./
 
