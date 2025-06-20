@@ -1,22 +1,22 @@
 services:
-  # Сервис с базой данных (остается без изменений)
+  # Сервис с базой данных PostgreSQL
   db:
     image: postgres:15-alpine
     restart: always
     environment:
-      POSTGRES_USER: words_game
-      POSTGRES_PASSWORD: yQMeKidypmQg4YWP902PotNKC5jrQo
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
       POSTGRES_DB: wordgamedb
     volumes:
       - postgres_data:/var/lib/postgresql/data
     networks:
       - internal_net
 
-  # <<< НОВЫЙ СЕРВИС ДЛЯ БЭКЕНДА >>>
+  # Сервис для бэкенда
   backend:
     build:
-    context: .  # <-- Указываем корень проекта как контекст
-    dockerfile: ./backend/Dockerfile # <-- Указываем путь к Dockerfile
+      context: .
+      dockerfile: ./backend/Dockerfile
     restart: always
     depends_on:
       - db
@@ -25,15 +25,15 @@ services:
     networks:
       - internal_net
 
-  # <<< НОВЫЙ СЕРВИС ДЛЯ ФРОНТЕНДА >>>
+  # Сервис для фронтенда
   frontend:
     build:
-      context: ./frontend # Указываем, что Dockerfile находится в папке frontend
+      context: ./frontend
     restart: always
     networks:
       - internal_net
 
-  # Сервис Nginx теперь будет общаться с frontend и backend
+  # Сервис Nginx
   nginx:
     image: nginx:1.25-alpine
     restart: always
@@ -50,7 +50,7 @@ services:
       - frontend
       - backend
 
-  # Сервис Certbot (остается без изменений)
+  # Сервис Certbot
   certbot:
     image: certbot/certbot
     volumes:
