@@ -1,15 +1,16 @@
 # =======================================================
-#  ФИНАЛЬНАЯ ВЕРСИЯ DOCKERFILE ДЛЯ BACKEND (v5 - без apk add)
+#  ФИНАЛЬНАЯ ВЕРСИЯ DOCKERFILE ДЛЯ BACKEND (на базе Debian)
 # =======================================================
 
-# Этап 1: Установка ВСЕХ зависимостей
-FROM node:18-alpine AS deps
+# Этап 1: Установка зависимостей
+# <<< ИЗМЕНЕНИЕ: Используем более надежный образ на базе Debian >>>
+FROM node:18-slim AS deps
 WORKDIR /app
 COPY backend/package.json backend/package-lock.json* ./
 RUN npm install
 
 # Этап 2: Сборка TypeScript в JavaScript
-FROM node:18-alpine AS builder
+FROM node:18-slim AS builder
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY backend ./backend
@@ -19,7 +20,7 @@ RUN npx prisma generate --schema=./prisma/schema.prisma
 RUN cd backend && npm run build
 
 # Этап 3: Финальный образ для запуска
-FROM node:18-alpine AS runner
+FROM node:18-slim AS runner
 WORKDIR /app
 ENV NODE_ENV=production
 

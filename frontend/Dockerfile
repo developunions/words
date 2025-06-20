@@ -1,18 +1,21 @@
+# =================================================================
+#  ФИНАЛЬНЫЙ DOCKERFILE ДЛЯ FRONTEND (Next.js на базе Debian)
+# =================================================================
+
 # Этап 1: Установка зависимостей
-# Используем легковесный образ Node.js
-FROM node:18-alpine AS deps
+# Используем 'slim' версию Node.js на базе Debian для лучшей совместимости
+FROM node:18-slim AS deps
 WORKDIR /app
 
 # Копируем файлы для установки зависимостей
-COPY package.json yarn.lock* ./
-# Устанавливаем зависимости с помощью npm (или yarn install, если вы используете yarn)
+# Использование * позволяет работать и с npm, и с yarn
+COPY package.json package-lock.json* yarn.lock* ./
 RUN npm install
 
 # ---
 
 # Этап 2: Сборка приложения
-# Используем тот же образ, чтобы окружение было консистентным
-FROM node:18-alpine AS builder
+FROM node:18-slim AS builder
 WORKDIR /app
 
 # Копируем зависимости из предыдущего этапа
@@ -25,20 +28,20 @@ RUN npm run build
 
 # ---
 
-# Этап 3: Запуск приложения
-# Используем самый минимальный образ Node.js для запуска
-FROM node:18-alpine AS runner
+# Этап 3: Финальный образ для запуска
+FROM node:18-slim AS runner
 WORKDIR /app
 
 # Устанавливаем окружение в "production"
 ENV NODE_ENV=production
 
 # Создаем специального пользователя с ограниченными правами для безопасности
+# Это стандартная практика для production-образов.
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs
 
 # Копируем только необходимые для запуска файлы из этапа сборки
-# Это ключевой шаг для уменьшения размера и повышения безопасности
+# Это ключевой шаг для уменьшения размера и повышения безопасности.
 COPY --from=builder /app/public ./public
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
@@ -50,5 +53,5 @@ EXPOSE 3000
 ENV PORT 3000
 
 # Команда для запуска production-сервера Next.js
-# server.js создается автоматически при сборке Next.js в режиме standalone
+# Файл server.js создается автоматически при сборке Next.js в режиме 'standalone'
 CMD ["node", "server.js"]
