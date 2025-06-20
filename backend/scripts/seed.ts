@@ -22,7 +22,7 @@ async function main() {
   console.log('Старые данные успешно удалены.');
 
   // Путь к файлу теперь внутри папки backend
-  const filePath = path.join(__dirname, '..', 'data', 'levels.json');
+  const filePath = path.join(process.cwd(), 'data', 'levels.json');
   const fileContents = fs.readFileSync(filePath, 'utf8');
   const levels: LevelData[] = JSON.parse(fileContents);
   console.log(`Найдено ${levels.length} уровней в levels.json.`);

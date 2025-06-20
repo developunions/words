@@ -37,6 +37,7 @@ COPY backend/package.json ./
 COPY --from=builder /app/prisma ./prisma
 COPY backend/scripts ./scripts
 COPY backend/tsconfig.json ./
+COPY backend/data ./data
 
 EXPOSE 5000
 CMD [ "node", "server.js" ]
