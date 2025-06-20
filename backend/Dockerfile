@@ -1,13 +1,9 @@
 # =======================================================
-#  ФИНАЛЬНАЯ ВЕРСИЯ DOCKERFILE ДЛЯ BACKEND (v4 - с фиксом OpenSSL)
+#  ФИНАЛЬНАЯ ВЕРСИЯ DOCKERFILE ДЛЯ BACKEND (v5 - без apk add)
 # =======================================================
 
 # Этап 1: Установка ВСЕХ зависимостей
 FROM node:18-alpine AS deps
-
-# <<< НОВАЯ СТРОКА: Устанавливаем пакет совместимости для OpenSSL 1.1 >>>
-RUN apk add openssl1.1-compat
-
 WORKDIR /app
 COPY backend/package.json backend/package-lock.json* ./
 RUN npm install
@@ -26,9 +22,6 @@ RUN cd backend && npm run build
 FROM node:18-alpine AS runner
 WORKDIR /app
 ENV NODE_ENV=production
-
-# <<< НОВАЯ СТРОКА: Устанавливаем пакет совместимости и в финальный образ >>>
-RUN apk add openssl1.1-compat
 
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/backend/dist ./
