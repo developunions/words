@@ -1,0 +1,36 @@
+// Этот файл — единый источник правды для вашей схемы БД.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL") // Берет адрес БД из файла .env
+}
+
+// Модель для одного уровня
+model Level {
+  id        Int      @id @default(autoincrement())
+  baseWord  String   @unique
+
+  solutions LevelSolution[]
+}
+
+// Модель для одного слова-ответа
+model Word {
+  id   Int    @id @default(autoincrement())
+  text String @unique
+
+  levels LevelSolution[]
+}
+
+// Промежуточная таблица для связи "многие ко многим"
+model LevelSolution {
+  level   Level @relation(fields: [levelId], references: [id])
+  levelId Int
+  word    Word  @relation(fields: [wordId], references: [id])
+  wordId  Int
+
+  @@id([levelId, wordId])
+}

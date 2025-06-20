@@ -24,3 +24,4 @@ Thumbs.db
 # Конфигурация редакторов
 .vscode/
 .idea/
+/generated/prisma
