@@ -1,34 +1,54 @@
 // frontend/src/components/game/WordGrid.tsx
 'use client';
+import { useMemo } from 'react';
 
 type WordGridProps = {
   wordsLengths: number[];
+  foundWords: string[]; // <-- Возвращаем это свойство
 };
 
-export default function WordGrid({ wordsLengths }: WordGridProps) {
-  const groupedWords: { [key: number]: number[] } = {};
-  wordsLengths.forEach(length => {
-    if (!groupedWords[length]) {
-      groupedWords[length] = [];
-    }
-    groupedWords[length].push(length);
-  });
+export default function WordGrid({ wordsLengths, foundWords }: WordGridProps) {
+  // Создаем копию найденных слов, чтобы мы могли "вычеркивать" их
+  const remainingFoundWords = useMemo(() => [...foundWords], [foundWords]);
+
+  const groupedWords = useMemo(() => {
+    const groups: { [key: number]: { length: number; word: string | null }[] } = {};
+    wordsLengths.forEach(length => {
+      if (!groups[length]) {
+        groups[length] = [];
+      }
+      // Ищем подходящее найденное слово
+      const foundWordIndex = remainingFoundWords.findIndex(w => w.length === length);
+      let wordToShow = null;
+      if (foundWordIndex > -1) {
+        wordToShow = remainingFoundWords[foundWordIndex];
+        // Удаляем слово, чтобы оно не попало в другую ячейку той же длины
+        remainingFoundWords.splice(foundWordIndex, 1);
+      }
+      groups[length].push({ length, word: wordToShow });
+    });
+    return groups;
+  }, [wordsLengths, foundWords]);
 
   return (
-    // <<< ИЗМЕНЕНИЕ 1: Увеличиваем отступ между группами слов (gap-y-6) >>>
     <div className="flex flex-col gap-y-6">
       {Object.keys(groupedWords).map(length => (
         <div key={length}>
-          {/* <<< ИЗМЕНЕНИЕ 2: Добавляем счетчик слов в заголовок >>> */}
           <h4 className="text-sm font-bold text-gray-400 mb-2">
             {length}-буквенные слова ({groupedWords[parseInt(length)].length} шт.)
           </h4>
-          {/* <<< ИЗМЕНЕНИЕ 3: Увеличиваем отступы между ячейками слов >>> */}
           <div className="flex flex-wrap gap-x-4 gap-y-3">
-            {groupedWords[parseInt(length)].map((wordLength, index) => (
+            {groupedWords[parseInt(length)].map((cell, index) => (
               <div key={index} className="flex gap-1">
-                {Array.from({ length: wordLength }).map((_, i) => (
-                  <div key={i} className="w-8 h-8 bg-gray-200 rounded-md" />
+                {Array.from({ length: cell.length }).map((_, i) => (
+                  <div
+                    key={i}
+                    className={`w-8 h-8 flex items-center justify-center font-bold text-xl rounded-md ${
+                      cell.word ? 'bg-green-200 text-green-800' : 'bg-gray-200'
+                    }`}
+                  >
+                    {cell.word ? cell.word[i].toUpperCase() : ''}
+                  </div>
                 ))}
               </div>
             ))}
