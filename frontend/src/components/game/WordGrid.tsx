@@ -4,31 +4,31 @@ import { useMemo } from 'react';
 
 type WordGridProps = {
   wordsLengths: number[];
-  foundWords: string[]; // <-- Возвращаем это свойство
+  foundWords: string[];
 };
 
 export default function WordGrid({ wordsLengths, foundWords }: WordGridProps) {
-  // Создаем копию найденных слов, чтобы мы могли "вычеркивать" их
-  const remainingFoundWords = useMemo(() => [...foundWords], [foundWords]);
-
   const groupedWords = useMemo(() => {
+    // Создаем копию найденных слов, чтобы мы могли "вычеркивать" их
+    const remainingFoundWords = [...foundWords];
+    
     const groups: { [key: number]: { length: number; word: string | null }[] } = {};
+    
     wordsLengths.forEach(length => {
       if (!groups[length]) {
         groups[length] = [];
       }
-      // Ищем подходящее найденное слово
+      
       const foundWordIndex = remainingFoundWords.findIndex(w => w.length === length);
       let wordToShow = null;
       if (foundWordIndex > -1) {
         wordToShow = remainingFoundWords[foundWordIndex];
-        // Удаляем слово, чтобы оно не попало в другую ячейку той же длины
         remainingFoundWords.splice(foundWordIndex, 1);
       }
       groups[length].push({ length, word: wordToShow });
     });
     return groups;
-  }, [wordsLengths, foundWords]);
+  }, [wordsLengths, foundWords]); // <-- Теперь зависимость правильная
 
   return (
     <div className="flex flex-col gap-y-6">
@@ -43,7 +43,7 @@ export default function WordGrid({ wordsLengths, foundWords }: WordGridProps) {
                 {Array.from({ length: cell.length }).map((_, i) => (
                   <div
                     key={i}
-                    className={`w-8 h-8 flex items-center justify-center font-bold text-xl rounded-md ${
+                    className={`w-8 h-8 flex items-center justify-center font-bold text-xl rounded-md transition-colors duration-300 ${
                       cell.word ? 'bg-green-200 text-green-800' : 'bg-gray-200'
                     }`}
                   >
