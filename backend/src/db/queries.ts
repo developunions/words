@@ -1,29 +1,24 @@
+// backend/src/db/queries.ts
 import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
 /**
  * Получает список всех уровней для экрана выбора.
- * Возвращает только необходимые поля, чтобы не передавать лишние данные.
  */
 export async function getAllLevels() {
   console.log('Запрос на получение всех уровней...');
   const levels = await prisma.level.findMany({
-    orderBy: {
-      id: 'asc', // Сортируем уровни по ID
-    },
+    orderBy: { id: 'asc' },
     select: {
       id: true,
       baseWord: true,
-      // Считаем количество решений для каждого уровня
       _count: {
         select: { solutions: true },
       },
     },
   });
   console.log(`Найдено ${levels.length} уровней.`);
-
-  // Преобразуем результат в более удобный формат
   return levels.map(level => ({
     id: level.id,
     baseWord: level.baseWord,
@@ -31,6 +26,11 @@ export async function getAllLevels() {
   }));
 }
 
+/**
+ * <<< НОВАЯ ФУНКЦИЯ >>>
+ * Получает данные для одного уровня по его ID.
+ * Не отправляет на клиент список правильных ответов!
+ */
 export async function getLevelById(id: number) {
   console.log(`Запрос на получение данных для уровня №${id}...`);
   const level = await prisma.level.findUnique({
@@ -52,7 +52,22 @@ export async function getLevelById(id: number) {
   return {
     id: level.id,
     baseWord: level.baseWord,
-    // Отдаем только массив длин слов для построения сетки
     wordsLengths: level.solutions.map(s => s.word.text.length).sort((a, b) => a - b),
   };
+}
+
+/**
+ * <<< ЗАГОТОВКА НА БУДУЩЕЕ >>>
+ * Проверяет, является ли слово правильным для данного уровня.
+ */
+export async function checkWordForLevel(levelId: number, wordToCheck: string): Promise<boolean> {
+  const solution = await prisma.levelSolution.findFirst({
+    where: {
+      levelId: levelId,
+      word: {
+        text: wordToCheck
+      }
+    }
+  });
+  return !!solution; // вернет true, если решение найдено, иначе false
 }
