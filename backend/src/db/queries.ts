@@ -1,4 +1,4 @@
-// backend/src/db/queries.ts
+// /backend/src/db/queries.ts
 import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
@@ -27,9 +27,7 @@ export async function getAllLevels() {
 }
 
 /**
- * <<< НОВАЯ ФУНКЦИЯ >>>
  * Получает данные для одного уровня по его ID.
- * Не отправляет на клиент список правильных ответов!
  */
 export async function getLevelById(id: number) {
   console.log(`Запрос на получение данных для уровня №${id}...`);
@@ -57,7 +55,6 @@ export async function getLevelById(id: number) {
 }
 
 /**
- * <<< ЗАГОТОВКА НА БУДУЩЕЕ >>>
  * Проверяет, является ли слово правильным для данного уровня.
  */
 export async function checkWordForLevel(levelId: number, wordToCheck: string): Promise<boolean> {
