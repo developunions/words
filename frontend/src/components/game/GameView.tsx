@@ -27,14 +27,13 @@ export default function GameView({ levelId, onBackToMenu }: GameViewProps) {
 
     const fetchLevelData = async () => {
       try {
-        const res = await fetch(`/api/levels/${levelId}`); // Используем относительный путь
+        const res = await fetch(`/api/levels/${levelId}`);
         if (!res.ok) {
           throw new Error('Не удалось загрузить данные уровня');
         }
         const data = await res.json();
         setLevelData(data);
-      } catch (err) { // <-- ИЗМЕНЕНИЕ ЗДЕСЬ
-        // Правильная обработка ошибок в TypeScript
+      } catch (err) {
         if (err instanceof Error) {
           setError(err.message);
         } else {
@@ -73,8 +72,10 @@ export default function GameView({ levelId, onBackToMenu }: GameViewProps) {
         <h2 className="text-3xl font-bold text-center text-gray-800 mb-6">
           {levelData.baseWord.toUpperCase()}
         </h2>
-        {/* Пока передаем пустой массив в foundWords */}
-        <WordGrid wordsLengths={levelData.wordsLengths} foundWords={[]} />
+        
+        {/* ИСПРАВЛЕНИЕ ЗДЕСЬ: убрали foundWords={[]} */}
+        <WordGrid wordsLengths={levelData.wordsLengths} />
+        
         <LetterButtons letters={[...new Set(levelData.baseWord)]} onLetterClick={handleLetterClick} />
       </div>
     </div>
