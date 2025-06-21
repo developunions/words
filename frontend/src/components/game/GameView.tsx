@@ -1,60 +1,69 @@
 // frontend/src/components/game/GameView.tsx
 'use client';
 
-import { useState, useEffect, useMemo } from 'react'; // <-- Добавляем useMemo
+import { useState, useEffect, useMemo } from 'react';
 import LetterButtons from './LetterButtons';
 import WordGrid from './WordGrid';
 
-// ... (типы GameViewProps и LevelData остаются без изменений) ...
-type GameViewProps = { levelId: number; onBackToMenu: () => void; };
-type LevelData = { id: number; baseWord: string; wordsLengths: number[]; };
+type GameViewProps = {
+  levelId: number;
+  onBackToMenu: () => void;
+};
 
+type LevelData = {
+  id: number;
+  baseWord: string;
+  wordsLengths: number[];
+};
 
 export default function GameView({ levelId, onBackToMenu }: GameViewProps) {
   const [levelData, setLevelData] = useState<LevelData | null>(null);
-  // ... (остальные useState остаются без изменений) ...
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    // ... (логика fetch остается без изменений) ...
     setIsLoading(true);
     setError(null);
+
     const fetchLevelData = async () => {
       try {
         const res = await fetch(`/api/levels/${levelId}`);
-        if (!res.ok) throw new Error('Не удалось загрузить данные уровня');
+        if (!res.ok) {
+          throw new Error('Не удалось загрузить данные уровня');
+        }
         const data = await res.json();
         setLevelData(data);
       } catch (err) {
-        if (err instanceof Error) setError(err.message);
-        else setError('Произошла неизвестная ошибка');
+        if (err instanceof Error) {
+          setError(err.message);
+        } else {
+          setError('Произошла неизвестная ошибка');
+        }
       } finally {
         setIsLoading(false);
       }
     };
+
     fetchLevelData();
   }, [levelId]);
 
-  // <<< ИЗМЕНЕНИЕ 1: Создаем перемешанный массив букв >>>
-  // useMemo гарантирует, что буквы перемешаются только один раз при загрузке уровня
-  const shuffledLetters = useMemo(() => {
+  // <<< ИЗМЕНЕНИЕ: Убираем перемешивание. Теперь просто разбиваем слово на массив букв >>>
+  const letters = useMemo(() => {
     if (!levelData) return [];
-    return levelData.baseWord.split('').sort(() => Math.random() - 0.5);
+    return levelData.baseWord.split('');
   }, [levelData]);
 
 
   if (isLoading) return <div>Загрузка уровня...</div>;
   if (error) return <div className="text-red-500">Ошибка: {error}</div>;
   if (!levelData) return <div>Уровень не найден.</div>;
-
+  
   const handleLetterClick = (letter: string) => {
     console.log(`Нажата буква: ${letter}`);
   };
 
   return (
     <div>
-      {/* ... кнопка "Вернуться" ... */}
       <button onClick={onBackToMenu} className="mb-4 text-gray-500 hover:text-gray-800 transition-colors">
         ← Вернуться к выбору уровня
       </button>
@@ -63,9 +72,9 @@ export default function GameView({ levelId, onBackToMenu }: GameViewProps) {
           {levelData.baseWord.toUpperCase()}
         </h2>
         <WordGrid wordsLengths={levelData.wordsLengths} />
-
-        {/* <<< ИЗМЕНЕНИЕ 2: Передаем перемешанные буквы >>> */}
-        <LetterButtons letters={shuffledLetters} onLetterClick={handleLetterClick} />
+        
+        {/* Передаем обычный, неотсортированный массив букв */}
+        <LetterButtons letters={letters} onLetterClick={handleLetterClick} />
       </div>
     </div>
   );
