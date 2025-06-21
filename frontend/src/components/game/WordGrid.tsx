@@ -3,11 +3,11 @@
 
 type WordGridProps = {
   wordsLengths: number[];
-  foundWords: string[]; // Пока будет пустым, но понадобится в будущем
+  // foundWords: string[]; // <-- Временно убираем это свойство
 };
 
-export default function WordGrid({ wordsLengths, foundWords }: WordGridProps) {
-  // Группируем слова по длине
+// ...и убираем его из параметров функции
+export default function WordGrid({ wordsLengths }: WordGridProps) { 
   const groupedWords: { [key: number]: number[] } = {};
   wordsLengths.forEach(length => {
     if (!groupedWords[length]) {

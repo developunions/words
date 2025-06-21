@@ -10,7 +10,6 @@ type GameViewProps = {
   onBackToMenu: () => void;
 };
 
-// Описываем структуру данных, которые мы ожидаем от API
 type LevelData = {
   id: number;
   baseWord: string;
@@ -22,31 +21,33 @@ export default function GameView({ levelId, onBackToMenu }: GameViewProps) {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Этот хук будет выполняться каждый раз, когда меняется levelId
   useEffect(() => {
     setIsLoading(true);
     setError(null);
 
     const fetchLevelData = async () => {
       try {
-        // Делаем запрос к нашему API
-        const res = await fetch(`/api/levels/${levelId}`);
+        const res = await fetch(`/api/levels/${levelId}`); // Используем относительный путь
         if (!res.ok) {
           throw new Error('Не удалось загрузить данные уровня');
         }
         const data = await res.json();
         setLevelData(data);
-      } catch (err: any) {
-        setError(err.message);
+      } catch (err) { // <-- ИЗМЕНЕНИЕ ЗДЕСЬ
+        // Правильная обработка ошибок в TypeScript
+        if (err instanceof Error) {
+          setError(err.message);
+        } else {
+          setError('Произошла неизвестная ошибка');
+        }
       } finally {
         setIsLoading(false);
       }
     };
 
     fetchLevelData();
-  }, [levelId]); // Зависимость от levelId
+  }, [levelId]);
 
-  // --- Логика отображения ---
   if (isLoading) {
     return <div>Загрузка уровня...</div>;
   }
@@ -54,12 +55,11 @@ export default function GameView({ levelId, onBackToMenu }: GameViewProps) {
   if (error) {
     return <div className="text-red-500">Ошибка: {error}</div>;
   }
-
+  
   if (!levelData) {
     return <div>Уровень не найден.</div>;
   }
-
-  // На этом этапе мы просто выводим буквы в консоль для теста
+  
   const handleLetterClick = (letter: string) => {
     console.log(`Нажата буква: ${letter}`);
   };
@@ -73,6 +73,7 @@ export default function GameView({ levelId, onBackToMenu }: GameViewProps) {
         <h2 className="text-3xl font-bold text-center text-gray-800 mb-6">
           {levelData.baseWord.toUpperCase()}
         </h2>
+        {/* Пока передаем пустой массив в foundWords */}
         <WordGrid wordsLengths={levelData.wordsLengths} foundWords={[]} />
         <LetterButtons letters={[...new Set(levelData.baseWord)]} onLetterClick={handleLetterClick} />
       </div>
