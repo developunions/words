@@ -1,43 +1,44 @@
 // frontend/src/components/layout/InteractiveZone.tsx
-'use client'; // Эта директива ОБЯЗАТЕЛЬНА, т.к. компонент использует состояние (useState)
+'use client';
 
 import { useState } from 'react';
 import LevelSelector from './LevelSelector';
-// import GameView from '../game/GameView'; // Мы добавим это на следующем этапе
+import GameView from '../game/GameView'; // <-- Теперь мы импортируем и используем GameView
 
-// Описываем, как выглядят данные одного уровня, которые мы получаем
 type LevelSummary = {
   id: number;
   baseWord: string;
   wordCount: number;
 };
 
-// Компонент получает первоначальный список уровней от страницы
 export default function InteractiveZone({ levels }: { levels: LevelSummary[] }) {
-  // Состояние для хранения того, что мы сейчас показываем: 'select' или 'game'
-  const [view, setView] = useState('select'); 
-  // Состояние для хранения ID выбранного уровня
+  const [view, setView] = useState('select');
   const [activeLevelId, setActiveLevelId] = useState<number | null>(null);
 
-  // Функция, которая будет вызываться при клике на уровень в LevelSelector
+  // Эта функция теперь будет переключать на игровой экран
   const handleLevelSelect = (levelId: number) => {
-    console.log(`Пользователь выбрал уровень №${levelId}!`); // Это для тестирования
-
-    // На следующем этапе мы добавим этот код, чтобы переключиться на игру:
-    // setActiveLevelId(levelId);
-    // setView('game');
+    console.log(`Переключаемся на уровень №${levelId}!`);
+    setActiveLevelId(levelId); // <-- Используем setActiveLevelId
+    setView('game');            // <-- Используем setView
   };
 
-  // Логика отображения: показываем либо выбор уровня, либо игру
+  // Эта функция будет возвращать нас обратно к выбору уровня
+  const handleBackToMenu = () => {
+    setActiveLevelId(null);
+    setView('select');
+  };
+
   return (
-    <div className="w-full bg-white p-8 rounded-lg shadow-md">
+    <div className="w-full bg-white p-8 rounded-lg shadow-md min-h-[400px]">
+      {/* Условие для показа выбора уровней */}
       {view === 'select' && (
         <LevelSelector levels={levels} onSelectLevel={handleLevelSelect} />
       )}
 
-      {/* {view === 'game' && activeLevelId !== null && (
-        <GameView levelId={activeLevelId} />
-      )} */}
+      {/* Условие для показа игрового поля */}
+      {view === 'game' && activeLevelId !== null && (
+        <GameView levelId={activeLevelId} onBackToMenu={handleBackToMenu} />
+      )}
     </div>
   );
 }
