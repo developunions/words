@@ -31,4 +31,28 @@ export async function getAllLevels() {
   }));
 }
 
-// В будущем здесь будут и другие функции: getLevelById, checkWord и т.д.
+export async function getLevelById(id: number) {
+  console.log(`Запрос на получение данных для уровня №${id}...`);
+  const level = await prisma.level.findUnique({
+    where: { id },
+    include: {
+      solutions: {
+        select: {
+          word: {
+            select: { text: true },
+          },
+        },
+      },
+    },
+  });
+
+  if (!level) return null;
+
+  console.log(`Данные для уровня '${level.baseWord}' найдены.`);
+  return {
+    id: level.id,
+    baseWord: level.baseWord,
+    // Отдаем только массив длин слов для построения сетки
+    wordsLengths: level.solutions.map(s => s.word.text.length).sort((a, b) => a - b),
+  };
+}

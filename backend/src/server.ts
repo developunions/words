@@ -21,9 +21,23 @@ app.get('/levels', async (req, res) => {
   }
 });
 
-// В будущем здесь будут другие маршруты, например:
-// app.get('/levels/:id', ...)
-// app.post('/levels/:id/check', ...)
+app.get('/levels/:id', async (req, res) => {
+  try {
+    const levelId = parseInt(req.params.id, 10);
+    if (isNaN(levelId)) {
+      return res.status(400).json({ error: 'ID уровня должен быть числом' });
+    }
+    const levelData = await getLevelById(levelId);
+    if (levelData) {
+      res.json(levelData);
+    } else {
+      res.status(404).json({ error: 'Уровень не найден' });
+    }
+  } catch (error) {
+    console.error(`Ошибка при получении уровня ${req.params.id}:`, error);
+    res.status(500).json({ error: 'Не удалось получить данные уровня' });
+  }
+});
 
 app.listen(port, () => {
   console.log(`Backend server listening on port ${port}`);
