@@ -1,5 +1,6 @@
 import express from 'express';
 import cors from 'cors';
+// Пока оставим только одну функцию, остальные добавим на следующих этапах
 import { getAllLevels } from './db/queries';
 
 const app = express();
@@ -10,7 +11,7 @@ app.use(express.json());
 
 // --- МАРШРУТЫ API ---
 
-app.get('/api/levels', async (req, res) => {
+app.get('/levels', async (req, res) => {
   try {
     const levels = await getAllLevels();
     res.json(levels);
@@ -19,6 +20,10 @@ app.get('/api/levels', async (req, res) => {
     res.status(500).json({ error: 'Не удалось получить список уровней' });
   }
 });
+
+// В будущем здесь будут другие маршруты, например:
+// app.get('/levels/:id', ...)
+// app.post('/levels/:id/check', ...)
 
 app.listen(port, () => {
   console.log(`Backend server listening on port ${port}`);
