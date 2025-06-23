@@ -4,10 +4,11 @@ import { NextResponse } from 'next/server';
 
 export async function GET(
   request: Request,
-  { params }: { params: { id: string } }
+  // ИСПРАВЛЕНО: Изменена структура получения параметров для корректной типизации
+  context: { params: { id: string } }
 ) {
   try {
-    const levelId = parseInt(params.id, 10);
+    const levelId = parseInt(context.params.id, 10);
     if (isNaN(levelId)) {
       return new NextResponse('Некорректный ID уровня', { status: 400 });
     }
@@ -20,7 +21,6 @@ export async function GET(
       return new NextResponse('Уровень не найден', { status: 404 });
     }
   } catch (error) {
-    // ИСПРАВЛЕНО: Используем переменную error
     console.error('Ошибка при получении данных уровня:', error);
     return new NextResponse('Внутренняя ошибка сервера', { status: 500 });
   }

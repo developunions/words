@@ -4,10 +4,11 @@ import { NextResponse } from 'next/server';
 
 export async function POST(
   request: Request,
-  { params }: { params: { id: string } }
+  // ИСПРАВЛЕНО: Изменена структура получения параметров для корректной типизации
+  context: { params: { id: string } }
 ) {
   try {
-    const levelId = parseInt(params.id, 10);
+    const levelId = parseInt(context.params.id, 10);
     if (isNaN(levelId)) {
         return new NextResponse('Некорректный ID уровня', { status: 400 });
     }
@@ -20,7 +21,6 @@ export async function POST(
     const isCorrect = await checkWordForLevel(levelId, word);
     return NextResponse.json({ correct: isCorrect });
   } catch (error) {
-    // ИСПРАВЛЕНО: Используем переменную error
     console.error('Ошибка при проверке слова:', error);
     return new NextResponse('Ошибка при проверке слова', { status: 500 });
   }
