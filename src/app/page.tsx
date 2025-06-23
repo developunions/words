@@ -1,12 +1,13 @@
-// frontend/src/app/page.tsx
+// src/app/page.tsx
 
-import InteractiveZone from '@/components/layout/InteractiveZone';
-// import DescriptionBlock from '@/components/layout/DescriptionBlock'; // Добавим позже
+import InteractiveZone from '../components/layout/InteractiveZone';
+import HowToPlayModal from '../components/ui/HowToPlayModal';
 
 // Эта асинхронная функция выполнится на сервере при загрузке страницы
 async function getLevels() {
   try {
-    // Мы делаем запрос к бэкенду по его внутреннему Docker-имени 'backend'
+    // ВАЖНО: При запросах на стороне сервера используем полный URL
+    // Убедитесь, что порт 3000 совпадает с тем, на котором запускается приложение
     const res = await fetch('http://localhost:3000/api/levels', { 
       cache: 'no-store' // Не кэшируем запрос, чтобы всегда получать свежие данные
     });
@@ -21,20 +22,21 @@ async function getLevels() {
   }
 }
 
-// Главный компонент страницы. Он тоже выполняется на сервере (SSR).
+// Главный компонент страницы.
 export default async function HomePage() {
   const levels = await getLevels();
 
   return (
-    <div className="container mx-auto p-4">
-      {/* Здесь в будущем будет шапка сайта */}
+    // Добавляем relative, чтобы позиционировать кнопку "Как играть?"
+    <div className="container mx-auto p-4 relative">
+      
+      {/* ДОБАВЛЯЕМ КОМПОНЕНТ МОДАЛЬНОГО ОКНА */}
+      <HowToPlayModal />
 
       <main className="my-8">
         <InteractiveZone levels={levels} />
       </main>
 
-      {/* <DescriptionBlock /> */}
-      {/* Здесь в будущем будет подвал сайта */}
     </div>
   );
 }
