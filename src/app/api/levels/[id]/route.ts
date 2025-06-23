@@ -4,11 +4,11 @@ import { NextResponse } from 'next/server';
 
 export async function GET(
   request: Request,
-  // ИСПРАВЛЕНО: Изменена структура получения параметров для корректной типизации
-  context: { params: { id: string } }
+  // ИСПРАВЛЕНО: Параметры теперь деструктурируются напрямую
+  { params }: { params: { id: string } }
 ) {
   try {
-    const levelId = parseInt(context.params.id, 10);
+    const levelId = parseInt(params.id, 10);
     if (isNaN(levelId)) {
       return new NextResponse('Некорректный ID уровня', { status: 400 });
     }
