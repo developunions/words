@@ -4,9 +4,10 @@ import { NextResponse } from 'next/server';
 
 export async function POST(
   request: Request,
-  // ИСПРАВЛЕНО: Параметры теперь деструктурируются напрямую
-  { params }: { params: { id: string } }
+  // ИСПРАВЛЕНО: Изменен синтаксис получения параметров
+  context: { params: { id: string } }
 ) {
+  const { params } = context;
   try {
     const levelId = parseInt(params.id, 10);
     if (isNaN(levelId)) {
