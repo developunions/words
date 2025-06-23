@@ -1,5 +1,4 @@
 # 1. Этап установки зависимостей
-# ИСПРАВЛЕНО: Используем 'slim' образ на базе Debian, который лучше совместим с Prisma
 FROM node:20-slim AS deps
 WORKDIR /app
 # Копируем package.json и package-lock.json
@@ -14,13 +13,15 @@ COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
 # Генерация Prisma Client и сборка Next.js
-# Переменная PRISMA_QUERY_ENGINE_BINARY больше не нужна, Prisma определит всё автоматически
 RUN npx prisma generate
 RUN npm run build
 
 # 3. Финальный, легковесный образ для запуска
 FROM node:20-slim AS runner
 WORKDIR /app
+
+# ИСПРАВЛЕНИЕ: Устанавливаем недостающую библиотеку libssl1.1
+RUN apt-get update && apt-get install -y libssl1.1 && rm -rf /var/lib/apt/lists/*
 
 ENV NODE_ENV=production
 # Отключаем телеметрию Next.js в продакшене
