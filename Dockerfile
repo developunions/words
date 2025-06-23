@@ -1,15 +1,13 @@
 # 1. Этап установки зависимостей
-# Используем стандартный образ `node:20`, который содержит все необходимые системные библиотеки.
 FROM node:20 AS deps
 WORKDIR /app
 COPY package*.json ./
-# Устанавливаем все зависимости, включая devDependencies, так как prisma CLI нужен на следующем этапе
+# Устанавливаем все зависимости, включая devDependencies
 RUN npm install
 
 # 2. Этап сборки приложения
 FROM node:20 AS builder
 WORKDIR /app
-# Копируем зависимости из предыдущего этапа
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
@@ -26,27 +24,14 @@ ENV NEXT_TELEMETRY_DISABLED 1
 
 # --- ИСПРАВЛЕНИЕ НАЧИНАЕТСЯ ЗДЕСЬ ---
 
-# Добавляем путь к локальным бинарникам в PATH, чтобы `npm start` мог найти `next`
-ENV PATH /app/node_modules/.bin:$PATH
-
-# Копируем package.json, чтобы можно было запускать npm-скрипты
+# Копируем все необходимые файлы для запуска
 COPY --from=builder /app/package.json ./package.json
-
-# Копируем только Prisma-клиент и CLI, необходимые для выполнения команд в работающем контейнере
-# Это нужно для `db:seed`
-COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
-COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
-COPY --from=builder /app/node_modules/prisma ./node_modules/prisma
-
-# Копируем схему Prisma, чтобы команда `seed` знала о структуре БД
+COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/.next ./.next
+COPY --from=builder /app/public ./public
 COPY --from=builder /app/prisma ./prisma
 
 # --- ИСПРАВЛЕНИЕ ЗАКАНЧИВАЕТСЯ ЗДЕСЬ ---
 
-# Копируем оптимизированные файлы из сборщика
-COPY --from=builder /app/public ./public
-COPY --from=builder /app/.next/standalone ./
-COPY --from=builder /app/.next/static ./.next/static
-
-# Запускаем приложение через `server.js` из standalone-вывода
-CMD ["node", "server.js"]
+# Запускаем приложение через NPM. Это гарантирует, что все пути будут настроены правильно.
+CMD ["npm", "start"]
