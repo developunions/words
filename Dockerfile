@@ -1,13 +1,13 @@
 # 1. Этап установки зависимостей
-FROM node:20-slim AS deps
+# ИСПРАВЛЕНО: Используем стандартный образ `node:20` вместо `node:20-slim`
+# Он больше по размеру, но содержит все необходимые системные библиотеки для Prisma.
+FROM node:20 AS deps
 WORKDIR /app
-# Копируем package.json и package-lock.json
 COPY package*.json ./
-# Используем npm ci для быстрой и надежной установки
 RUN npm ci
 
 # 2. Этап сборки приложения
-FROM node:20-slim AS builder
+FROM node:20 AS builder
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
@@ -16,21 +16,15 @@ COPY . .
 RUN npx prisma generate
 RUN npm run build
 
-# 3. Финальный, легковесный образ для запуска
-FROM node:20-slim AS runner
+# 3. Финальный образ для запуска
+FROM node:20 AS runner
 WORKDIR /app
 
-# ИСПРАВЛЕНИЕ: Устанавливаем недостающую библиотеку libssl1.1
-RUN apt-get update && apt-get install -y libssl1.1 && rm -rf /var/lib/apt/lists/*
-
 ENV NODE_ENV=production
-# Отключаем телеметрию Next.js в продакшене
 ENV NEXT_TELEMETRY_DISABLED 1
 
 # Копируем оптимизированные файлы из сборщика
 COPY --from=builder /app/public ./public
-
-# Копируем standalone-вывод (включая server.js) и статичные файлы
 COPY --from=builder /app/.next/standalone ./
 COPY --from=builder /app/.next/static ./.next/static
 
