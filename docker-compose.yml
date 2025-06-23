@@ -1,5 +1,4 @@
 services:
-  # Сервис с базой данных PostgreSQL
   db:
     image: postgres:15-alpine
     restart: always
@@ -12,13 +11,10 @@ services:
     networks:
       - internal_net
 
-  # Сервис для бэкенда
-  backend:
-    build:
-      context: .
-      dockerfile: ./backend/Dockerfile
+  app:
+    build: . # Сборка из корневого Dockerfile
     ports:
-      - "5001:5000"
+      - "3000:3000"
     restart: always
     depends_on:
       - db
@@ -26,40 +22,6 @@ services:
       DATABASE_URL: ${DATABASE_URL}
     networks:
       - internal_net
-
-  # Сервис для фронтенда
-  frontend:
-    build:
-      context: ./frontend
-    ports:
-      - "3000:3000"
-    restart: always
-    networks:
-      - internal_net
-
-  # Сервис Nginx
-  nginx:
-    image: nginx:1.25-alpine
-    restart: always
-    ports:
-      - "80:80"
-      - "443:443"
-    volumes:
-      - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf
-      - ./certbot/www:/var/www/certbot/:ro
-      - ./certbot/conf/:/etc/nginx/ssl/:ro
-    networks:
-      - internal_net
-    depends_on:
-      - frontend
-      - backend
-
-  # Сервис Certbot
-  certbot:
-    image: certbot/certbot
-    volumes:
-      - ./certbot/www:/var/www/certbot/:rw
-      - ./certbot/conf/:/etc/letsencrypt/:rw
 
 networks:
   internal_net:

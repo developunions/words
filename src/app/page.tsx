@@ -7,7 +7,7 @@ import InteractiveZone from '@/components/layout/InteractiveZone';
 async function getLevels() {
   try {
     // Мы делаем запрос к бэкенду по его внутреннему Docker-имени 'backend'
-    const res = await fetch('http://backend:5000/levels', { 
+    const res = await fetch('http://localhost:3000/api/levels', { 
       cache: 'no-store' // Не кэшируем запрос, чтобы всегда получать свежие данные
     });
 
