@@ -32,6 +32,8 @@ COPY --from=builder /app/public ./public
 COPY --from=builder /app/prisma ./prisma
 COPY --from=builder /app/scripts ./scripts
 COPY --from=builder /app/data    ./data
+COPY --from=builder /app/tsconfig.scripts.json ./
+COPY --from=builder /app/tsconfig.json 
 
 # --- ИСПРАВЛЕНИЕ ЗАКАНЧИВАЕТСЯ ЗДЕСЬ ---
 
