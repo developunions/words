@@ -1,28 +1,41 @@
-# Dockerfile
-FROM node:20-alpine AS base
-
+# 1. Этап установки зависимостей
+FROM node:20-alpine AS deps
 WORKDIR /app
-
-# Установка зависимостей
+# Копируем package.json и package-lock.json
 COPY package*.json ./
-RUN npm install
+# Используем npm ci для быстрой и надежной установки
+RUN npm ci
 
-# Копирование Prisma схемы
-COPY prisma ./prisma/
-
-# Генерация Prisma Client
-RUN npx prisma generate
-
-# Сборка приложения
+# 2. Этап сборки приложения
+FROM node:20-alpine AS builder
+WORKDIR /app
+COPY --from=deps /app/node_modules ./node_modules
 COPY . .
+
+# Prisma требует эту переменную для корректной сборки под Alpine
+ENV PRISMA_QUERY_ENGINE_BINARY="libquery_engine-linux-musl.so.node"
+
+# Генерация Prisma Client и сборка Next.js
+RUN npx prisma generate
 RUN npm run build
 
-# Финальный образ
-FROM base AS runner
+# 3. Финальный, легковесный образ для запуска
+FROM node:20-alpine AS runner
 WORKDIR /app
-COPY --from=base /app/next.config.ts ./
-COPY --from=base /app/public ./public
-COPY --from=base /app/.next ./.next
-COPY --from=base /app/node_modules ./node_modules
 
-CMD ["npm", "start"]
+ENV NODE_ENV=production
+# Отключаем телеметрию Next.js в продакшене
+ENV NEXT_TELEMETRY_DISABLED 1
+
+# ИСПРАВЛЕНИЕ: Устанавливаем OpenSSL 1.1 для совместимости с Prisma
+RUN apk add --no-cache openssl1.1-compat
+
+# Копируем оптимизированные файлы из сборщика
+COPY --from=builder /app/public ./public
+
+# Копируем standalone-вывод (включая server.js) и статичные файлы
+COPY --from=builder /app/.next/standalone ./
+COPY --from=builder /app/.next/static ./.next/static
+
+# ИСПРАВЛЕНИЕ: Запускаем приложение с помощью правильной команды для standalone-режима
+CMD ["node", "server.js"]
