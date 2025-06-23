@@ -3,7 +3,7 @@
 FROM node:20 AS deps
 WORKDIR /app
 COPY package*.json ./
-# Устанавливаем все зависимости, включая devDependencies
+# Устанавливаем все зависимости, включая devDependencies, так как prisma CLI нужен на следующем этапе
 RUN npm install
 
 # 2. Этап сборки приложения
@@ -26,10 +26,14 @@ ENV NEXT_TELEMETRY_DISABLED 1
 
 # --- ИСПРАВЛЕНИЕ НАЧИНАЕТСЯ ЗДЕСЬ ---
 
-# Копируем package.json, чтобы можно было запускать npm-скрипты типа "db:seed"
+# Добавляем путь к локальным бинарникам в PATH, чтобы `npm start` мог найти `next`
+ENV PATH /app/node_modules/.bin:$PATH
+
+# Копируем package.json, чтобы можно было запускать npm-скрипты
 COPY --from=builder /app/package.json ./package.json
 
 # Копируем только Prisma-клиент и CLI, необходимые для выполнения команд в работающем контейнере
+# Это нужно для `db:seed`
 COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
 COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
 COPY --from=builder /app/node_modules/prisma ./node_modules/prisma
@@ -44,6 +48,5 @@ COPY --from=builder /app/public ./public
 COPY --from=builder /app/.next/standalone ./
 COPY --from=builder /app/.next/static ./.next/static
 
-# Запускаем приложение
+# Запускаем приложение через `server.js` из standalone-вывода
 CMD ["node", "server.js"]
-

@@ -3,17 +3,17 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev --turbopack",
+    "dev": "next dev",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-	"db:seed": "prisma db seed"
+    "db:seed": "npx prisma db seed"
   },
   "dependencies": {
+    "@prisma/client": "^5.15.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
-    "next": "15.3.4",
-	"@prisma/client": "^5.15.0"
+    "next": "15.3.4"
   },
   "devDependencies": {
     "typescript": "^5",
@@ -25,10 +25,10 @@
     "eslint": "^9",
     "eslint-config-next": "15.3.4",
     "@eslint/eslintrc": "^3",
-	"prisma": "^5.15.0",
-	"ts-node": "^10.9.2"
+    "prisma": "^5.15.0",
+    "ts-node": "^10.9.2"
   },
   "prisma": {
-  "seed": "ts-node scripts/seed.ts"
-}
+    "seed": "ts-node scripts/seed.ts"
+  }
 }
