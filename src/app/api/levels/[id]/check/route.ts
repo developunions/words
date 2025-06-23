@@ -1,18 +1,17 @@
-// /src/app/api/levels/[id]/check/route.ts
 import { checkWordForLevel } from '@/lib/data';
 import { NextResponse } from 'next/server';
 
 export async function POST(
   request: Request,
-  // ИСПРАВЛЕНО: Изменен синтаксис получения параметров
-  context: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
-  const { params } = context;
+  const { id } = await params;
   try {
-    const levelId = parseInt(params.id, 10);
+    const levelId = parseInt(id, 10);
     if (isNaN(levelId)) {
-        return new NextResponse('Некорректный ID уровня', { status: 400 });
+      return new NextResponse('Некорректный ID уровня', { status: 400 });
     }
+
     const { word } = await request.json();
 
     if (!word) {
