@@ -1,30 +1,15 @@
 // src/app/page.tsx
 
-import InteractiveZone from '../components/layout/InteractiveZone';
-import HowToPlayModal from '../components/ui/HowToPlayModal';
+import InteractiveZone from '@/components/layout/InteractiveZone';
+import HowToPlayModal from '@/components/ui/HowToPlayModal';
+import { getAllLevels } from '@/lib/data';
 
-// Эта асинхронная функция выполнится на сервере при загрузке страницы
-async function getLevels() {
-  try {
-    // ВАЖНО: При запросах на стороне сервера используем полный URL
-    // Убедитесь, что порт 3000 совпадает с тем, на котором запускается приложение
-    const res = await fetch('http://localhost:3000/api/levels', { 
-      cache: 'no-store' // Не кэшируем запрос, чтобы всегда получать свежие данные
-    });
-
-    if (!res.ok) {
-      throw new Error('Failed to fetch levels');
-    }
-    return res.json();
-  } catch (error) {
-    console.error("Не удалось загрузить уровни:", error);
-    return []; // Возвращаем пустой массив в случае ошибки
-  }
-}
-
-// Главный компонент страницы.
+// Главный компонент страницы. Теперь он напрямую получает данные.
 export default async function HomePage() {
-  const levels = await getLevels();
+  
+  // ИСПРАВЛЕНИЕ: Убрали лишний сетевой запрос. 
+  // Теперь серверный компонент напрямую вызывает серверную функцию.
+  const levels = await getAllLevels();
 
   return (
     // Добавляем relative, чтобы позиционировать кнопку "Как играть?"
