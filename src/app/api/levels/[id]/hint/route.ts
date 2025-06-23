@@ -1,6 +1,5 @@
 // /src/app/api/levels/[id]/hint/route.ts
-
-import { getHint } from '@/lib/data'; // Ваша функция для получения подсказки
+import { getHint } from '@/lib/data';
 import { NextResponse } from 'next/server';
 
 export async function POST(
@@ -13,7 +12,6 @@ export async function POST(
       return new NextResponse('Некорректный ID уровня', { status: 400 });
     }
 
-    // Получаем массив уже найденных слов из тела запроса
     const { foundWords } = await request.json();
 
     if (!Array.isArray(foundWords)) {
@@ -28,6 +26,7 @@ export async function POST(
       return new NextResponse('Больше нет слов для подсказки', { status: 404 });
     }
   } catch (error) {
+    // ИСПРАВЛЕНО: Используем переменную error
     console.error('Ошибка при получении подсказки:', error);
     return new NextResponse('Внутренняя ошибка сервера', { status: 500 });
   }

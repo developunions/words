@@ -1,6 +1,5 @@
 // /src/app/api/levels/[id]/route.ts
-
-import { getLevelById } from '@/lib/data'; // Предполагается, что вы перенесли сюда логику
+import { getLevelById } from '@/lib/data';
 import { NextResponse } from 'next/server';
 
 export async function GET(
@@ -9,7 +8,6 @@ export async function GET(
 ) {
   try {
     const levelId = parseInt(params.id, 10);
-    // Проверка, что ID является числом
     if (isNaN(levelId)) {
       return new NextResponse('Некорректный ID уровня', { status: 400 });
     }
@@ -22,6 +20,7 @@ export async function GET(
       return new NextResponse('Уровень не найден', { status: 404 });
     }
   } catch (error) {
+    // ИСПРАВЛЕНО: Используем переменную error
     console.error('Ошибка при получении данных уровня:', error);
     return new NextResponse('Внутренняя ошибка сервера', { status: 500 });
   }

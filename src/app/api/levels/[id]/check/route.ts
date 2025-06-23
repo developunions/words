@@ -1,4 +1,4 @@
-// src/app/api/levels/[id]/check/route.ts
+// /src/app/api/levels/[id]/check/route.ts
 import { checkWordForLevel } from '@/lib/data';
 import { NextResponse } from 'next/server';
 
@@ -8,6 +8,9 @@ export async function POST(
 ) {
   try {
     const levelId = parseInt(params.id, 10);
+    if (isNaN(levelId)) {
+        return new NextResponse('Некорректный ID уровня', { status: 400 });
+    }
     const { word } = await request.json();
 
     if (!word) {
@@ -17,6 +20,8 @@ export async function POST(
     const isCorrect = await checkWordForLevel(levelId, word);
     return NextResponse.json({ correct: isCorrect });
   } catch (error) {
+    // ИСПРАВЛЕНО: Используем переменную error
+    console.error('Ошибка при проверке слова:', error);
     return new NextResponse('Ошибка при проверке слова', { status: 500 });
   }
 }
