@@ -5,9 +5,9 @@ import { useState, useEffect, useMemo } from 'react';
 import LetterButtons from './LetterButtons';
 import WordGrid from './WordGrid';
 import { useProgress } from '@/context/ProgressContext';
-import GameHeader from './GameHeader'; // <-- 1. ИМПОРТИРУЕМ НОВЫЙ КОМПОНЕНТ
+import GameHeader from './GameHeader';
 
-// Вспомогательный компонент для поля ввода
+// ... (вспомогательные компоненты WordBuilder остаются без изменений)
 function WordBuilder({ word }: { word: string }) {
   return (
     <div className="my-6 flex justify-center items-center h-16 bg-white border-2 rounded-lg shadow-inner">
@@ -18,12 +18,14 @@ function WordBuilder({ word }: { word: string }) {
   );
 }
 
-// Типы
-type GameViewProps = { levelId: number; onBackToMenu: () => void; };
+
+// ИСПРАВЛЕНО: Убираем onBackToMenu из типов
+type GameViewProps = { levelId: number; };
 type LevelData = { id: number; baseWord: string; wordsLengths: number[]; };
 
 // Основной компонент
-export default function GameView({ levelId, onBackToMenu }: GameViewProps) {
+// ИСПРАВЛЕНО: Убираем onBackToMenu из деструктуризации props
+export default function GameView({ levelId }: GameViewProps) {
   // Состояния
   const [levelData, setLevelData] = useState<LevelData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -36,6 +38,7 @@ export default function GameView({ levelId, onBackToMenu }: GameViewProps) {
   const { progress, addFoundWord } = useProgress();
   const foundWords = useMemo(() => progress[levelId] || [], [progress, levelId]);
 
+  // Вся остальная логика компонента (useEffect, обработчики) остается без изменений...
   // Загрузка данных
   useEffect(() => {
     setIsLoading(true);
@@ -97,7 +100,6 @@ export default function GameView({ levelId, onBackToMenu }: GameViewProps) {
       if (correct) {
         addFoundWord(levelId, wordToCheck);
       } else {
-        // Запускаем анимацию встряхивания
         setIsShaking(true);
         setTimeout(() => setIsShaking(false), 500);
       }
@@ -130,7 +132,7 @@ export default function GameView({ levelId, onBackToMenu }: GameViewProps) {
       setIsChecking(false);
     }
   };
-
+  
   // Отрисовка
   if (isLoading) return <div className="text-center p-10">Загрузка уровня...</div>;
   if (error) return <div className="text-red-500 text-center p-10">Ошибка: {error}</div>;
@@ -138,9 +140,7 @@ export default function GameView({ levelId, onBackToMenu }: GameViewProps) {
 
   return (
     <div>
-      {/* 2. ИСПОЛЬЗУЕМ НОВЫЙ КОМПОНЕНТ */}
       <GameHeader baseWord={levelData.baseWord} isShaking={isShaking} />
-
       <div className="p-6 border rounded-lg bg-gray-50">
         <WordGrid wordsLengths={levelData.wordsLengths} foundWords={foundWords} />
         <WordBuilder word={currentWord} />
