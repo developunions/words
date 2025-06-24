@@ -1,6 +1,5 @@
 // src/app/game/[id]/page.tsx
 import GameView from "@/components/game/GameView";
-import { notFound } from 'next/navigation';
 
 interface PageParams {
   id: string;
