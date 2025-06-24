@@ -20,11 +20,6 @@ export default function InteractiveZone({ levels }: { levels: LevelSummary[] }) 
     setView('game');
   };
 
-  // Эта функция больше не передается в GameView, но может понадобиться в будущем
-  const handleBackToMenu = () => {
-    setActiveLevelId(null);
-    setView('select');
-  };
 
   return (
     <div className="w-full bg-white p-8 rounded-lg shadow-md min-h-[400px]">
