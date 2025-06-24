@@ -1,11 +1,7 @@
 // src/components/layout/InteractiveZone.tsx
+'use client';
 
-type LevelSummary = {
-  id: number;
-  baseWord: string;
-  wordCount: number;
-};
-
+// Этот компонент теперь является просто стилизованной оберткой для контента.
 export default function InteractiveZone({ children }: { children: React.ReactNode }) {
   return (
     <div className="w-full bg-white p-8 rounded-lg shadow-md min-h-[400px]">
