@@ -1,9 +1,11 @@
+// src/components/game/GameView.tsx
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
 import LetterButtons from './LetterButtons';
 import WordGrid from './WordGrid';
 import { useProgress } from '@/context/ProgressContext';
+import GameHeader from './GameHeader'; // <-- 1. ИМПОРТИРУЕМ НОВЫЙ КОМПОНЕНТ
 
 // Вспомогательный компонент для поля ввода
 function WordBuilder({ word }: { word: string }) {
@@ -59,7 +61,7 @@ export default function GameView({ levelId, onBackToMenu }: GameViewProps) {
     return levelData.baseWord.split('');
   }, [levelData]);
 
-  // Обработчики
+  // Обработчики...
   const handleLetterClick = (letter: string, index: number) => {
     if (usedIndices.includes(index) || isChecking) return;
     setCurrentWord(currentWord + letter);
@@ -95,6 +97,7 @@ export default function GameView({ levelId, onBackToMenu }: GameViewProps) {
       if (correct) {
         addFoundWord(levelId, wordToCheck);
       } else {
+        // Запускаем анимацию встряхивания
         setIsShaking(true);
         setTimeout(() => setIsShaking(false), 500);
       }
@@ -120,7 +123,6 @@ export default function GameView({ levelId, onBackToMenu }: GameViewProps) {
         addFoundWord(levelId, hint);
       } else {
         console.log("Подсказок больше нет или произошла ошибка");
-        // Здесь можно показать уведомление пользователю
       }
     } catch (error) {
       console.error("Ошибка при получении подсказки:", error);
@@ -136,13 +138,10 @@ export default function GameView({ levelId, onBackToMenu }: GameViewProps) {
 
   return (
     <div>
-      <button onClick={onBackToMenu} className="mb-4 text-gray-500 hover:text-gray-800">
-        ← Вернуться к выбору уровня
-      </button>
+      {/* 2. ИСПОЛЬЗУЕМ НОВЫЙ КОМПОНЕНТ */}
+      <GameHeader baseWord={levelData.baseWord} isShaking={isShaking} />
+
       <div className="p-6 border rounded-lg bg-gray-50">
-        <h2 className={`text-3xl font-bold text-center text-gray-800 mb-6 tracking-widest transition-transform duration-500 ${isShaking ? 'animate-shake' : ''}`}>
-          {levelData.baseWord.toUpperCase()}
-        </h2>
         <WordGrid wordsLengths={levelData.wordsLengths} foundWords={foundWords} />
         <WordBuilder word={currentWord} />
         <div className="flex justify-center items-center gap-2 md:gap-4 mt-8">
