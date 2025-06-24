@@ -1,21 +1,33 @@
 // src/app/game/[id]/page.tsx
-
 import GameView from "@/components/game/GameView";
+import { notFound } from 'next/navigation';
 
-export default function GamePage({ params }: { params: { id: string } }) {
-  
-  // Конвертируем id из строки в число
-  const levelId = Number(params.id);
+interface PageParams {
+  id: string;
+}
 
-  // Проверяем, что ID является корректным числом.
+export default async function GamePage(
+  { params }: { params: Promise<PageParams> }
+) {
+  // Дожидаемся параметров маршрута
+  const { id } = await params;
+
+  // Конвертируем id в число
+  const levelId = Number(id);
+
+  // Проверяем корректность ID
   if (isNaN(levelId)) {
-    return <div className="text-red-500 text-center p-10">Неверный ID уровня.</div>;
+    return (
+      <div className="text-red-500 text-center p-10">
+        Неверный ID уровня.
+      </div>
+    );
   }
 
+  // Рендер вида игры
   return (
     <div className="container mx-auto p-4">
       <main className="my-8">
-        {/* GameView теперь получает только levelId */}
         <GameView levelId={levelId} />
       </main>
     </div>
