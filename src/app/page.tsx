@@ -1,11 +1,9 @@
 // src/app/page.tsx
-
-import InteractiveZone from '@/components/layout/InteractiveZone';
 import HowToPlayModal from '@/components/ui/HowToPlayModal';
+import InteractiveZone from '@/components/layout/InteractiveZone';
+import LevelSelector from '@/components/layout/LevelSelector';
 import { getAllLevels } from '@/lib/data';
 
-// Эта строка решает проблему. Она указывает Next.js, что страница динамическая
-// и не должна генерироваться во время сборки.
 export const dynamic = 'force-dynamic';
 
 export default async function HomePage() {
@@ -15,7 +13,9 @@ export default async function HomePage() {
     <div className="container mx-auto p-4 relative">
       <HowToPlayModal />
       <main className="my-8">
-        <InteractiveZone levels={levels} />
+        <InteractiveZone>
+          <LevelSelector levels={levels} />
+        </InteractiveZone>
       </main>
     </div>
   );
