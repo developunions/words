@@ -1,9 +1,8 @@
 // src/app/game/[id]/page.tsx
-'use client'; // Эта страница будет клиентским компонентом
 
 import GameView from "@/components/game/GameView";
-import { useRouter } from 'next/navigation';
 
+// Тип для props страницы, Next.js передаст сюда `params`.
 type GamePageProps = {
   params: {
     id: string;
@@ -11,17 +10,11 @@ type GamePageProps = {
 };
 
 export default function GamePage({ params }: GamePageProps) {
-  const router = useRouter();
+  // Конвертируем id из строки в число
   const levelId = Number(params.id);
 
-  // Функция для возврата на главный экран.
-  // Теперь она не нужна, так как GameHeader использует <Link>,
-  // но оставим ее для совместимости с GameView, пока мы его не обновим.
-  const handleBackToMenu = () => {
-    router.push('/');
-  };
-
-  // Проверяем, что ID является числом
+  // Проверяем, что ID является корректным числом.
+  // Эта проверка важна, если кто-то введет неверный URL.
   if (isNaN(levelId)) {
     return <div className="text-red-500 text-center p-10">Неверный ID уровня.</div>;
   }
@@ -29,7 +22,8 @@ export default function GamePage({ params }: GamePageProps) {
   return (
     <div className="container mx-auto p-4">
       <main className="my-8">
-        <GameView levelId={levelId} onBackToMenu={handleBackToMenu} />
+        {/* ИСПРАВЛЕНО: GameView теперь получает только levelId, как и было запланировано */}
+        <GameView levelId={levelId} />
       </main>
     </div>
   );
