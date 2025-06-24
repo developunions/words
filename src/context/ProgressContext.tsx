@@ -1,12 +1,12 @@
-// frontend/src/context/ProgressContext.tsx
+// src/context/ProgressContext.tsx
 'use client';
 import { createContext, useState, useEffect, useContext, ReactNode } from 'react';
+import Cookies from 'js-cookie';
 
 type ProgressState = {
   [key: number]: string[];
 };
 
-// Теперь контекст будет предоставлять сам объект progress
 type ProgressContextType = {
   progress: ProgressState;
   addFoundWord: (levelId: number, word: string) => void;
@@ -14,33 +14,36 @@ type ProgressContextType = {
 
 const ProgressContext = createContext<ProgressContextType | undefined>(undefined);
 
+// Название нашей cookie
+const PROGRESS_COOKIE_NAME = 'word-game-progress';
+
 export function ProgressProvider({ children }: { children: ReactNode }) {
   const [progress, setProgress] = useState<ProgressState>({});
 
+  // При первой загрузке компонента читаем данные из cookie
   useEffect(() => {
     try {
-      const savedProgress = localStorage.getItem('wordGameState');
+      const savedProgress = Cookies.get(PROGRESS_COOKIE_NAME); // <-- 2. Читаем cookie
       if (savedProgress) {
         setProgress(JSON.parse(savedProgress));
       }
     } catch (error) {
-      console.error("Failed to load progress from localStorage", error);
+      console.error("Failed to load progress from cookie", error);
     }
   }, []);
 
   const addFoundWord = (levelId: number, word: string) => {
-    // Создаем новый объект, чтобы React заметил изменение
     const newProgress = { ...progress };
     const levelProgress = newProgress[levelId] || [];
 
     if (!levelProgress.includes(word)) {
       newProgress[levelId] = [...levelProgress, word];
       setProgress(newProgress);
-      localStorage.setItem('wordGameState', JSON.stringify(newProgress));
+      // 3. Сохраняем прогресс в cookie на 1 год
+      Cookies.set(PROGRESS_COOKIE_NAME, JSON.stringify(newProgress), { expires: 365 });
     }
   };
 
-  // Передаем в value сам объект progress и функцию для его изменения
   return (
     <ProgressContext.Provider value={{ progress, addFoundWord }}>
       {children}
