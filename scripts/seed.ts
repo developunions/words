@@ -6,7 +6,6 @@ import path from 'path';
 
 const prisma = new PrismaClient();
 
-// Типы для новой структуры JSON
 type LevelData = {
   base_word: string;
   valid_words: string[];
@@ -19,21 +18,16 @@ type LevelsByDifficulty = {
 }
 
 async function main() {
-  console.log('Начинаем процесс "посева" базы данных с новой структурой...');
+  console.log('Начинаем процесс "посева" базы данных...');
 
-  console.log('Очистка старых данных...');
-  await prisma.levelSolution.deleteMany();
-  await prisma.word.deleteMany();
-  await prisma.level.deleteMany();
-  console.log('Старые данные успешно удалены.');
+  // ИСПРАВЛЕНИЕ: Блок очистки старых данных удален.
+  // Команда `prisma migrate reset` уже делает это за нас.
 
-  // ИЗМЕНЕНО: Указываем путь к новому файлу. Убедитесь, что он называется так же.
-  const filePath = path.join(process.cwd(), 'data', 'levels.json');
+  const filePath = path.join(process.cwd(), 'data', 'levels_first.json');
   const fileContents = fs.readFileSync(filePath, 'utf8');
   const levelsByDifficulty: LevelsByDifficulty = JSON.parse(fileContents);
   console.log(`Данные уровней по сложностям загружены.`);
 
-  // --- Сбор и создание всех уникальных слов (остается без изменений) ---
   const allValidWords = new Set<string>();
   Object.values(levelsByDifficulty).flat().forEach(level => {
     level.valid_words.forEach(word => allValidWords.add(word));
@@ -49,19 +43,17 @@ async function main() {
   const wordMap = new Map(allWordsFromDb.map((word: Word) => [word.text, word.id]));
   console.log('Карта слов (word -> id) создана.');
 
-  // --- Создание уровней с учетом сложности и порядка ---
   console.log('Создание уровней и связей по сложностям...');
   
   for (const [difficulty, levels] of Object.entries(levelsByDifficulty)) {
     console.log(`Создание уровней для сложности: ${difficulty.toUpperCase()}`);
-    let order = 1; // Порядковый номер начинается с 1 для каждой сложности
+    let order = 1;
     for (const levelData of levels) {
       const validWordsForLevel = levelData.valid_words.filter(w => wordMap.has(w));
 
       await prisma.level.create({
         data: {
           baseWord: levelData.base_word,
-          // Приводим строку 'easy' к значению enum 'EASY'
           difficulty: difficulty.toUpperCase() as any, 
           order: order++,
           solutions: {
