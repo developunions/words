@@ -1,19 +1,25 @@
-// /backend/scripts/seed.ts
+// /scripts/seed.ts
 
-// ИЗМЕНЕНИЕ 1: Импортируем не только PrismaClient, но и тип 'Word'
 import { PrismaClient, Word } from '@prisma/client';
 import fs from 'fs';
 import path from 'path';
 
 const prisma = new PrismaClient();
 
+// Типы для новой структуры JSON
 type LevelData = {
   base_word: string;
   valid_words: string[];
 };
 
+type LevelsByDifficulty = {
+  easy: LevelData[];
+  medium: LevelData[];
+  hard: LevelData[];
+}
+
 async function main() {
-  console.log('Начинаем процесс "посева" базы данных...');
+  console.log('Начинаем процесс "посева" базы данных с новой структурой...');
 
   console.log('Очистка старых данных...');
   await prisma.levelSolution.deleteMany();
@@ -21,52 +27,57 @@ async function main() {
   await prisma.level.deleteMany();
   console.log('Старые данные успешно удалены.');
 
-  // Путь к файлу теперь внутри папки backend
+  // ИЗМЕНЕНО: Указываем путь к новому файлу. Убедитесь, что он называется так же.
   const filePath = path.join(process.cwd(), 'data', 'levels.json');
   const fileContents = fs.readFileSync(filePath, 'utf8');
-  const levels: LevelData[] = JSON.parse(fileContents);
-  console.log(`Найдено ${levels.length} уровней в levels.json.`);
+  const levelsByDifficulty: LevelsByDifficulty = JSON.parse(fileContents);
+  console.log(`Данные уровней по сложностям загружены.`);
 
+  // --- Сбор и создание всех уникальных слов (остается без изменений) ---
   const allValidWords = new Set<string>();
-  for (const level of levels) {
-    for (const word of level.valid_words) {
-      allValidWords.add(word);
-    }
-  }
+  Object.values(levelsByDifficulty).flat().forEach(level => {
+    level.valid_words.forEach(word => allValidWords.add(word));
+  });
 
   const wordData = Array.from(allValidWords).map((word) => ({ text: word }));
   await prisma.word.createMany({
     data: wordData,
   });
   console.log(`Успешно создано ${wordData.length} уникальных слов в таблице Word.`);
-
+  
   const allWordsFromDb = await prisma.word.findMany();
-
-  // ИЗМЕНЕНИЕ 2: Явно указываем тип для 'word' -> (word: Word)
   const wordMap = new Map(allWordsFromDb.map((word: Word) => [word.text, word.id]));
   console.log('Карта слов (word -> id) создана.');
 
-  console.log('Создание уровней и связей...');
-  for (const levelData of levels) {
-    // Пропускаем слова, которых нет в нашей карте (на всякий случай)
-    const validWordsForLevel = levelData.valid_words.filter(w => wordMap.has(w));
+  // --- Создание уровней с учетом сложности и порядка ---
+  console.log('Создание уровней и связей по сложностям...');
+  
+  for (const [difficulty, levels] of Object.entries(levelsByDifficulty)) {
+    console.log(`Создание уровней для сложности: ${difficulty.toUpperCase()}`);
+    let order = 1; // Порядковый номер начинается с 1 для каждой сложности
+    for (const levelData of levels) {
+      const validWordsForLevel = levelData.valid_words.filter(w => wordMap.has(w));
 
-    await prisma.level.create({
-      data: {
-        baseWord: levelData.base_word,
-        solutions: {
-          create: validWordsForLevel.map((wordText) => ({
-            word: {
-              connect: {
-                id: wordMap.get(wordText),
+      await prisma.level.create({
+        data: {
+          baseWord: levelData.base_word,
+          // Приводим строку 'easy' к значению enum 'EASY'
+          difficulty: difficulty.toUpperCase() as any, 
+          order: order++,
+          solutions: {
+            create: validWordsForLevel.map((wordText) => ({
+              word: {
+                connect: {
+                  id: wordMap.get(wordText),
+                },
               },
-            },
-          })),
+            })),
+          },
         },
-      },
-    });
+      });
+    }
   }
-  console.log(`Все ${levels.length} уровней и их связи успешно созданы.`);
+  console.log('Все уровни и их связи успешно созданы.');
 }
 
 main()
