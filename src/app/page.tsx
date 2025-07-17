@@ -7,19 +7,17 @@ import { cookies } from 'next/headers';
 
 export const dynamic = 'force-dynamic';
 
-// Убираем отдельный тип `Progress` для упрощения
-// type Progress = { [key: number]: string[] };
+type Progress = { [key: number]: string[] };
 
 export default async function HomePage() {
   const levelsByDifficulty = await getLevelsGroupedByDifficulty();
   
-  // ИСПРАВЛЕНО: Разбиваем получение cookie на два шага,
-  // чтобы помочь TypeScript правильно определить типы.
-  const cookieStore = cookies();
-  const progressCookie = cookieStore.get('word-game-progress');
-
-  const progress: { [key: number]: string[] } = progressCookie?.value
-    ? JSON.parse(progressCookie.value)
+  // ИСПРАВЛЕНО: Читаем cookie напрямую в одну строку.
+  // Это должно помочь TypeScript правильно определить тип и избежать ошибки сборки.
+  const progressCookie = cookies().get('word-game-progress')?.value;
+  
+  const progress: Progress = progressCookie 
+    ? JSON.parse(progressCookie) 
     : {};
 
   // Вспомогательная функция для определения статуса уровня
