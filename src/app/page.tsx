@@ -1,46 +1,53 @@
 // src/app/page.tsx
 import HowToPlayModal from '@/components/ui/HowToPlayModal';
 import InteractiveZone from '@/components/layout/InteractiveZone';
-import LevelSelector, { LevelStatus, LevelWithStatus } from '@/components/layout/LevelSelector';
-import { getAllLevels } from '@/lib/data';
-import { cookies } from 'next/headers'; // <-- Импортируем для чтения cookie на сервере
+import LevelSelector, { LevelWithStatus } from '@/components/layout/LevelSelector';
+import { getLevelsGroupedByDifficulty } from '@/lib/data'; // <-- ИСПОЛЬЗУЕМ НОВУЮ ФУНКЦИЮ
+import { cookies } from 'next/headers';
 
 export const dynamic = 'force-dynamic';
 
+type Progress = { [key: number]: string[] };
+
 export default async function HomePage() {
-  // 1. Получаем все уровни из БД
-  const allLevels = await getAllLevels();
+  const levelsByDifficulty = await getLevelsGroupedByDifficulty();
+  
+  const progressCookie = cookies().get('word-game-progress')?.value;
+  const progress: Progress = progressCookie ? JSON.parse(progressCookie) : {};
 
-  // 2. Читаем cookie с прогрессом
-  const cookieStore = await cookies();
-  const progressCookie = cookieStore.get('word-game-progress')?.value;
-  const progress: { [key: number]: string[] } = progressCookie
-    ? JSON.parse(progressCookie)
-    : {};
-
-  // 3. Определяем статус для каждого уровня
-  const levelsWithStatus: LevelWithStatus[] = allLevels.map(level => {
+  // Вспомогательная функция для определения статуса уровня
+  const getLevelStatus = (level: { id: number; wordCount: number }): LevelWithStatus => {
     const foundWordsCount = progress[level.id]?.length || 0;
-    let status: LevelStatus = 'not-started';
+    let status: 'not-started' | 'started' | 'completed' = 'not-started';
 
     if (foundWordsCount > 0) {
       status = foundWordsCount === level.wordCount ? 'completed' : 'started';
     }
+    
+    return { ...level, status };
+  };
 
-    return {
-      id: level.id,
-      wordCount: level.wordCount,
-      status
-    };
-  });
+  // Применяем статусы к каждому уровню
+  const easyLevels = levelsByDifficulty.EASY.map(getLevelStatus);
+  const mediumLevels = levelsByDifficulty.MEDIUM.map(getLevelStatus);
+  const hardLevels = levelsByDifficulty.HARD.map(getLevelStatus);
 
-  // 4. Рендерим страницу
+  // Логика блокировки секций
+  const isMediumLocked = easyLevels.some(level => level.status !== 'completed');
+  const isHardLocked = mediumLevels.some(level => level.status !== 'completed');
+
   return (
     <div className="container mx-auto p-4 relative">
       <HowToPlayModal />
       <main className="my-8">
         <InteractiveZone>
-          <LevelSelector levels={levelsWithStatus} />
+          <LevelSelector
+            easyLevels={easyLevels}
+            mediumLevels={mediumLevels}
+            hardLevels={hardLevels}
+            isMediumLocked={isMediumLocked}
+            isHardLocked={isHardLocked}
+          />
         </InteractiveZone>
       </main>
     </div>
