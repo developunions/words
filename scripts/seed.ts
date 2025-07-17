@@ -20,10 +20,9 @@ type LevelsByDifficulty = {
 async function main() {
   console.log('Начинаем процесс "посева" базы данных...');
 
-  // Блок очистки старых данных УДАЛЕН.
-  // Команда `prisma migrate reset` уже делает это за нас.
+  // Этот блок УДАЛЕН, так как `prisma migrate reset` делает это за нас.
 
-  const filePath = path.join(process.cwd(), 'data', 'levels_first.json');
+  const filePath = path.join(process.cwd(), 'data', 'levels.json');
   const fileContents = fs.readFileSync(filePath, 'utf8');
   const levelsByDifficulty: LevelsByDifficulty = JSON.parse(fileContents);
   console.log(`Данные уровней по сложностям загружены.`);
