@@ -2,18 +2,25 @@
 import HowToPlayModal from '@/components/ui/HowToPlayModal';
 import InteractiveZone from '@/components/layout/InteractiveZone';
 import LevelSelector, { LevelWithStatus } from '@/components/layout/LevelSelector';
-import { getLevelsGroupedByDifficulty } from '@/lib/data'; // <-- ИСПОЛЬЗУЕМ НОВУЮ ФУНКЦИЮ
+import { getLevelsGroupedByDifficulty } from '@/lib/data';
 import { cookies } from 'next/headers';
 
 export const dynamic = 'force-dynamic';
 
-type Progress = { [key: number]: string[] };
+// Убираем отдельный тип `Progress` для упрощения
+// type Progress = { [key: number]: string[] };
 
 export default async function HomePage() {
   const levelsByDifficulty = await getLevelsGroupedByDifficulty();
   
-  const progressCookie = cookies().get('word-game-progress')?.value;
-  const progress: Progress = progressCookie ? JSON.parse(progressCookie) : {};
+  // ИСПРАВЛЕНО: Разбиваем получение cookie на два шага,
+  // чтобы помочь TypeScript правильно определить типы.
+  const cookieStore = cookies();
+  const progressCookie = cookieStore.get('word-game-progress');
+
+  const progress: { [key: number]: string[] } = progressCookie?.value
+    ? JSON.parse(progressCookie.value)
+    : {};
 
   // Вспомогательная функция для определения статуса уровня
   const getLevelStatus = (level: { id: number; wordCount: number }): LevelWithStatus => {
@@ -27,12 +34,10 @@ export default async function HomePage() {
     return { ...level, status };
   };
 
-  // Применяем статусы к каждому уровню
   const easyLevels = levelsByDifficulty.EASY.map(getLevelStatus);
   const mediumLevels = levelsByDifficulty.MEDIUM.map(getLevelStatus);
   const hardLevels = levelsByDifficulty.HARD.map(getLevelStatus);
 
-  // Логика блокировки секций
   const isMediumLocked = easyLevels.some(level => level.status !== 'completed');
   const isHardLocked = mediumLevels.some(level => level.status !== 'completed');
 
