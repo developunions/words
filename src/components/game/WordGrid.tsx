@@ -70,4 +70,3 @@ export default function WordGrid({ wordsLengths, foundWords, onHintSelect, selec
       })}
     </div>
   );
-}

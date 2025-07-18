@@ -3,18 +3,11 @@
 import { getHintByLength } from '@/lib/data';
 import { NextResponse } from 'next/server';
 
-// Определяем тип для объекта context, который передает Next.js
-type RouteContext = {
-  params: {
-    id: string;
-  };
-};
-
 export async function POST(
   request: Request,
-  context: RouteContext // Используем наш определенный тип
+  // ИСПРАВЛЕНО: Используем прямое деструктурирование и inline-тип, как в других рабочих роутах
+  { params }: { params: { id: string } }
 ) {
-  const { params } = context;
   try {
     const levelId = parseInt(params.id, 10);
     if (isNaN(levelId)) {
