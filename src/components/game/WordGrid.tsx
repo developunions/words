@@ -43,7 +43,6 @@ export default function WordGrid({ wordsLengths, foundWords, onHintSelect, selec
             <div className="flex flex-wrap gap-x-4 gap-y-3">
               {groupedWords[length].map((cell, index) => {
                 const isSelectedForHint = selectedHintCell?.length === length && selectedHintCell?.index === index;
-                // Определяем, можно ли кликнуть на эту ячейку для подсказки
                 const isHintable = !cell.word;
 
                 return (

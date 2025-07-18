@@ -3,9 +3,16 @@
 import { getHintByLength } from '@/lib/data';
 import { NextResponse } from 'next/server';
 
+// Определяем тип для объекта context, который передает Next.js
+type RouteContext = {
+  params: {
+    id: string;
+  };
+};
+
 export async function POST(
   request: Request,
-  context: { params: { id: string } }
+  context: RouteContext // Используем наш определенный тип
 ) {
   const { params } = context;
   try {
