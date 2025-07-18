@@ -1,3 +1,4 @@
+// src/lib/data.ts
 import prisma from '@/lib/prisma';
 import { Difficulty } from '@prisma/client';
 
@@ -26,7 +27,6 @@ export async function getLevelById(id: number) {
     include: {
       solutions: {
         select: { word: { select: { text: true } } },
-        // Сортируем слова, чтобы их порядок был предсказуем
         orderBy: { word: { text: 'asc' } }
       },
     },
@@ -34,18 +34,37 @@ export async function getLevelById(id: number) {
 
   if (!level) return null;
 
-  // Создаем финальный, отсортированный список слов
   const solutionWords = level.solutions.map(s => s.word.text)
     .sort((a, b) => a.length - b.length || a.localeCompare(b));
 
   return {
     id: level.id,
     baseWord: level.baseWord,
-    // Передаем клиенту полный список слов-ответов
     solutionWords: solutionWords,
     difficulty: level.difficulty,
     order: level.order,
   };
+}
+
+export async function getSpecificHint(levelId: number, length: number, indexInGroup: number): Promise<string | null> {
+    const level = await prisma.level.findUnique({
+        where: { id: levelId },
+        include: {
+            solutions: {
+                select: { word: { select: { text: true } } },
+                orderBy: { word: { text: 'asc' } }
+            }
+        },
+    });
+
+    if (!level) return null;
+    const wordsOfLength = level.solutions.map(s => s.word.text).filter(word => word.length === length);
+    const hint = wordsOfLength[indexInGroup];
+    if (hint) {
+        console.log(`API: Выдана подсказка '${hint}'.`);
+        return hint;
+    }
+    return null;
 }
 
 export async function getNextLevelId(currentDifficulty: Difficulty, currentOrder: number): Promise<number | null> {
