@@ -1,3 +1,4 @@
+// src/lib/data.ts
 import prisma from '@/lib/prisma';
 import { Difficulty } from '@prisma/client';
 
@@ -7,28 +8,7 @@ type GroupedLevels = {
 };
 
 /**
- * Получает список всех уровней.
- */
-export async function getAllLevels() {
-  const levels = await prisma.level.findMany({
-    orderBy: { id: 'asc' },
-    select: {
-      id: true,
-      baseWord: true,
-      _count: {
-        select: { solutions: true },
-      },
-    },
-  });
-  return levels.map(level => ({
-    id: level.id,
-    baseWord: level.baseWord,
-    wordCount: level._count.solutions,
-  }));
-}
-
-/**
- * Получает все уровни и группирует их по сложности.
+ * Получает все уровни и группирует их по сложности для главного экрана.
  */
 export async function getLevelsGroupedByDifficulty() {
   const allLevels = await prisma.level.findMany({
@@ -64,9 +44,9 @@ export async function getLevelsGroupedByDifficulty() {
   return grouped;
 }
 
-
 /**
  * Получает данные для одного уровня по его ID.
+ * wordsLengths теперь сортируется правильно для соответствия сетке.
  */
 export async function getLevelById(id: number) {
   const level = await prisma.level.findUnique({
@@ -78,6 +58,8 @@ export async function getLevelById(id: number) {
             select: { text: true },
           },
         },
+        // Сортируем слова, чтобы их порядок был предсказуем
+        orderBy: { word: { text: 'asc' } }
       },
     },
   });
@@ -87,7 +69,8 @@ export async function getLevelById(id: number) {
   return {
     id: level.id,
     baseWord: level.baseWord,
-    wordsLengths: level.solutions.map(s => s.word.text.length).sort((a, b) => a - b),
+    // Сортируем сначала по длине, потом по алфавиту, чтобы соответствовать логике getSpecificHint
+    wordsLengths: level.solutions.map(s => s.word.text).sort((a, b) => a.length - b.length || a.localeCompare(b)).map(w => w.length),
     difficulty: level.difficulty,
     order: level.order,
     totalWords: level.solutions.length,
@@ -95,66 +78,38 @@ export async function getLevelById(id: number) {
 }
 
 /**
- * Проверяет, является ли слово правильным для данного уровня.
- */
-export async function checkWordForLevel(levelId: number, wordToCheck: string): Promise<boolean> {
-  const solution = await prisma.levelSolution.findFirst({
-    where: {
-      levelId: levelId,
-      word: {
-        text: wordToCheck
-      }
-    }
-  });
-  return !!solution;
-}
-
-/**
- * Старая функция для получения случайной подсказки.
- */
-export async function getHint(levelId: number, foundWords: string[]): Promise<string | null> {
-    const level = await prisma.level.findUnique({
-        where: { id: levelId },
-        include: { solutions: { select: { word: { select: { text: true } } } } },
-    });
-
-    if (!level) return null;
-
-    const allSolutionWords = level.solutions.map(s => s.word.text);
-    const notFoundWords = allSolutionWords.filter(word => !foundWords.includes(word));
-
-    if (notFoundWords.length === 0) return null;
-
-    const hint = notFoundWords[Math.floor(Math.random() * notFoundWords.length)];
-    return hint;
-}
-
-/**
  * НОВАЯ ФУНКЦИЯ
- * Возвращает одно из еще не отгаданных слов ЗАДАННОЙ ДЛИНЫ.
+ * Возвращает КОНКРЕТНОЕ неотгаданное слово по его длине и позиции в группе.
  */
-export async function getHintByLength(levelId: number, foundWords: string[], length: number): Promise<string | null> {
-    console.log(`API: Запрос подсказки для уровня №${levelId} для слова длиной ${length}...`);
+export async function getSpecificHint(levelId: number, length: number, indexInGroup: number): Promise<string | null> {
+    console.log(`API: Запрос конкретной подсказки для уровня №${levelId}, слово длиной ${length}, позиция ${indexInGroup}`);
     const level = await prisma.level.findUnique({
         where: { id: levelId },
-        include: { solutions: { select: { word: { select: { text: true } } } } },
+        include: {
+            solutions: {
+                select: { word: { select: { text: true } } },
+                // Важно: сортировка здесь должна быть такой же, как в getLevelById
+                orderBy: { word: { text: 'asc' } }
+            }
+        },
     });
 
     if (!level) return null;
 
-    const allSolutionWords = level.solutions.map(s => s.word.text);
-    
-    // Находим все слова нужной длины, которые еще не были отгаданы
-    const notFoundWordsOfLength = allSolutionWords.filter(word => 
-        !foundWords.includes(word) && word.length === length
-    );
+    // Находим все слова нужной длины в отсортированном списке
+    const wordsOfLength = level.solutions
+        .map(s => s.word.text)
+        .filter(word => word.length === length);
 
-    if (notFoundWordsOfLength.length === 0) return null; // Не найдено слов такой длины
+    // Получаем конкретное слово по его индексу в группе
+    const hint = wordsOfLength[indexInGroup];
 
-    // Возвращаем случайное из найденных слов нужной длины
-    const hint = notFoundWordsOfLength[Math.floor(Math.random() * notFoundWordsOfLength.length)];
-    console.log(`API: Выдана подсказка '${hint}'.`);
-    return hint;
+    if (hint) {
+        console.log(`API: Выдана подсказка '${hint}'.`);
+        return hint;
+    }
+
+    return null;
 }
 
 
@@ -187,4 +142,19 @@ export async function getNextLevelId(currentDifficulty: Difficulty, currentOrder
   }
 
   return nextLevel?.id || null;
+}
+
+/**
+ * Проверяет, является ли слово правильным для данного уровня.
+ */
+export async function checkWordForLevel(levelId: number, wordToCheck: string): Promise<boolean> {
+  const solution = await prisma.levelSolution.findFirst({
+    where: {
+      levelId: levelId,
+      word: {
+        text: wordToCheck
+      }
+    }
+  });
+  return !!solution;
 }

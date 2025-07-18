@@ -10,7 +10,7 @@ import GameHeader from '@/components/game/GameHeader';
 import { findNextLevelAction } from '@/app/actions';
 import { Difficulty } from '@prisma/client';
 
-// Вспомогательный компонент для поля ввода
+// ... (WordBuilder и типы остаются без изменений)
 function WordBuilder({ word }: { word: string }) {
   return (
     <div className="my-6 flex justify-center items-center h-16 bg-white border-2 rounded-lg shadow-inner">
@@ -21,7 +21,6 @@ function WordBuilder({ word }: { word: string }) {
   );
 }
 
-// Тип данных для уровня
 type LevelData = {
   id: number;
   baseWord: string;
@@ -30,6 +29,7 @@ type LevelData = {
   order: number;
   totalWords: number;
 };
+
 
 export default function GameView({ levelId }: { levelId: number }) {
   const [levelData, setLevelData] = useState<LevelData | null>(null);
@@ -82,23 +82,26 @@ export default function GameView({ levelId }: { levelId: number }) {
     }
   };
   
+  // ОБНОВЛЕННАЯ ЛОГИКА ПОДСКАЗКИ
   const handleHint = async () => {
     if (!selectedHintCell || isChecking) return;
+
     setIsChecking(true);
     try {
       const res = await fetch(`/api/levels/${levelId}/specific-hint`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          foundWords,
+          // Передаем и длину, и индекс в группе
           length: selectedHintCell.length,
+          indexInGroup: selectedHintCell.index
         }),
       });
       if (res.ok) {
         const { hint } = await res.json();
         addFoundWord(levelId, hint);
       } else {
-        console.log("Подсказок для этой длины больше нет");
+        console.log("Не удалось получить подсказку для этой ячейки");
       }
     } catch (error) {
       console.error("Ошибка при получении подсказки:", error);
@@ -108,6 +111,7 @@ export default function GameView({ levelId }: { levelId: number }) {
     }
   };
 
+  // ... (остальные обработчики остаются без изменений)
   const handleLetterClick = (letter: string, index: number) => {
     if (usedIndices.includes(index) || isChecking) return;
     setCurrentWord(currentWord + letter);
