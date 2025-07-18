@@ -10,7 +10,6 @@ import GameHeader from '@/components/game/GameHeader';
 import { findNextLevelAction } from '@/app/actions';
 import { Difficulty } from '@prisma/client';
 
-// Вспомогательный компонент для поля ввода
 function WordBuilder({ word }: { word: string }) {
   return (
     <div className="my-6 flex justify-center items-center h-16 bg-white border-2 rounded-lg shadow-inner">
@@ -21,11 +20,10 @@ function WordBuilder({ word }: { word: string }) {
   );
 }
 
-// Тип данных, которые мы получаем от API
 type LevelData = {
   id: number;
   baseWord: string;
-  solutionWords: string[]; // <-- Теперь получаем полный список слов
+  solutionWords: string[];
   difficulty: Difficulty;
   order: number;
 };
@@ -38,20 +36,14 @@ export default function GameView({ levelId }: { levelId: number }) {
   const [usedIndices, setUsedIndices] = useState<number[]>([]);
   const [isShaking, setIsShaking] = useState(false);
   const [isChecking, setIsChecking] = useState(false);
-  
   const { progress, addFoundWord } = useProgress();
   const foundWords = useMemo(() => progress[levelId] || [], [progress, levelId]);
-
   const [nextLevelId, setNextLevelId] = useState<number | null>(null);
-  // Состояние для хранения выбранного СЛОВА для подсказки
   const [selectedHintWord, setSelectedHintWord] = useState<string | null>(null);
 
-  // Проверяем, пройден ли уровень
   const isLevelComplete = levelData ? foundWords.length === levelData.solutionWords.length : false;
 
-  // Загрузка данных уровня
   useEffect(() => {
-    // Сбрасываем состояния при смене уровня
     setNextLevelId(null);
     setSelectedHintWord(null);
     const fetchLevelData = async () => {
@@ -71,7 +63,6 @@ export default function GameView({ levelId }: { levelId: number }) {
     fetchLevelData();
   }, [levelId]);
 
-  // Эффект для поиска следующего уровня, когда текущий пройден
   useEffect(() => {
     if (isLevelComplete && levelData) {
       findNextLevelAction(levelData.difficulty, levelData.order).then(setNextLevelId);
@@ -80,7 +71,6 @@ export default function GameView({ levelId }: { levelId: number }) {
 
   const letters = useMemo(() => levelData?.baseWord.split('') || [], [levelData]);
 
-  // Обработчик выбора слова для подсказки
   const handleHintSelect = (word: string) => {
     if (selectedHintWord === word) {
       setSelectedHintWord(null);
@@ -89,11 +79,10 @@ export default function GameView({ levelId }: { levelId: number }) {
     }
   };
   
-  // Логика подсказки теперь полностью на клиенте
   const handleHint = () => {
     if (!selectedHintWord) return;
     addFoundWord(levelId, selectedHintWord);
-    setSelectedHintWord(null); // Сбрасываем выделение
+    setSelectedHintWord(null);
   };
 
   const handleLetterClick = (letter: string, index: number) => {
@@ -120,7 +109,6 @@ export default function GameView({ levelId }: { levelId: number }) {
     }
     setIsChecking(true);
     const wordToCheck = currentWord;
-
     try {
       const res = await fetch(`/api/levels/${levelId}/check`, {
         method: 'POST',
@@ -166,7 +154,7 @@ export default function GameView({ levelId }: { levelId: number }) {
         ) : (
           <>
             <WordGrid 
-              solutionWords={levelData.solutionWords} 
+              solutionWords={levelData.solutionWords || []} // <-- ИСПРАВЛЕНО
               foundWords={foundWords}
               onHintSelect={handleHintSelect}
               selectedHintWord={selectedHintWord}
