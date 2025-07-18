@@ -1,23 +1,21 @@
 # 1. Этап установки зависимостей
-# ИСПРАВЛЕНО: Используем node:18, который основан на Debian Bullseye.
-# Эта версия Debian использует OpenSSL 1.1.x, для которого у Prisma ЕСТЬ нужные бинарные файлы.
-FROM node:18 AS deps
+FROM node:20 AS deps
 WORKDIR /app
 COPY package*.json ./
 RUN npm install
 
 # 2. Этап сборки приложения
-FROM node:18 AS builder
+FROM node:20 AS builder
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
-# Теперь эта команда должна сработать, так как ОС и Prisma совместимы
+# Генерация Prisma Client и сборка Next.js
 RUN npx prisma generate
 RUN npm run build
 
 # 3. Финальный образ для запуска
-FROM node:18 AS runner
+FROM node:20 AS runner
 WORKDIR /app
 
 ENV NODE_ENV=production

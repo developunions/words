@@ -10,25 +10,25 @@
     "db:seed": "npx prisma db seed"
   },
   "dependencies": {
-    "@prisma/client": "^5.15.0",
+    "@prisma/client": "latest",
     "js-cookie": "^3.0.5",
     "next": "15.3.4",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"
   },
   "devDependencies": {
-    "@eslint/eslintrc": "^3",
-    "@tailwindcss/postcss": "^4",
+    "@eslint/eslintrc": "^3.0.0",
+    "@tailwindcss/postcss": "^4.0.0-alpha.13",
     "@types/js-cookie": "^3.0.6",
-    "@types/node": "^20",
-    "@types/react": "^19",
-    "@types/react-dom": "^19",
-    "eslint": "^9",
+    "@types/node": "^20.12.12",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "eslint": "^9.3.0",
     "eslint-config-next": "15.3.4",
-    "prisma": "^5.15.0",
-    "tailwindcss": "^4",
+    "prisma": "latest",
+    "tailwindcss": "^4.0.0-alpha.13",
     "ts-node": "^10.9.2",
-    "typescript": "^5"
+    "typescript": "^5.4.5"
   },
   "prisma": {
     "seed": "ts-node --project tsconfig.scripts.json scripts/seed.ts"
