@@ -1,3 +1,4 @@
+// src/lib/data.ts
 import prisma from '@/lib/prisma';
 import { Difficulty } from '@prisma/client';
 
@@ -26,7 +27,6 @@ export async function getLevelById(id: number) {
     include: {
       solutions: {
         select: { word: { select: { text: true } } },
-        // Сортируем слова, чтобы их порядок был предсказуемым
         orderBy: { word: { text: 'asc' } }
       },
     },
@@ -37,7 +37,6 @@ export async function getLevelById(id: number) {
   return {
     id: level.id,
     baseWord: level.baseWord,
-    // Сортируем сначала по длине, потом по алфавиту, чтобы соответствовать логике getSpecificHint
     wordsLengths: level.solutions.map(s => s.word.text).sort((a, b) => a.length - b.length || a.localeCompare(b)).map(w => w.length),
     difficulty: level.difficulty,
     order: level.order,
@@ -45,14 +44,12 @@ export async function getLevelById(id: number) {
   };
 }
 
-// НОВАЯ ФУНКЦИЯ для конкретной подсказки
 export async function getSpecificHint(levelId: number, length: number, indexInGroup: number): Promise<string | null> {
     const level = await prisma.level.findUnique({
         where: { id: levelId },
         include: {
             solutions: {
                 select: { word: { select: { text: true } } },
-                // Важно: сортировка здесь должна быть такой же, как в getLevelById
                 orderBy: { word: { text: 'asc' } }
             }
         },
