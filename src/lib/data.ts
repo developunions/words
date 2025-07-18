@@ -1,23 +1,9 @@
-// src/lib/data.ts
 import prisma from '@/lib/prisma';
 import { Difficulty } from '@prisma/client';
 
 type GroupedLevels = {
   [key in Difficulty]: { id: number; wordCount: number }[];
 };
-
-// ВОССТАНОВЛЕНА для совместимости со старым API
-export async function getAllLevels() {
-  const levels = await prisma.level.findMany({
-    orderBy: { id: 'asc' },
-    select: { id: true, baseWord: true, _count: { select: { solutions: true } } },
-  });
-  return levels.map(level => ({
-    id: level.id,
-    baseWord: level.baseWord,
-    wordCount: level._count.solutions,
-  }));
-}
 
 export async function getLevelsGroupedByDifficulty() {
   const allLevels = await prisma.level.findMany({
@@ -40,6 +26,7 @@ export async function getLevelById(id: number) {
     include: {
       solutions: {
         select: { word: { select: { text: true } } },
+        // Сортируем слова, чтобы их порядок был предсказуемым
         orderBy: { word: { text: 'asc' } }
       },
     },
@@ -50,6 +37,7 @@ export async function getLevelById(id: number) {
   return {
     id: level.id,
     baseWord: level.baseWord,
+    // Сортируем сначала по длине, потом по алфавиту, чтобы соответствовать логике getSpecificHint
     wordsLengths: level.solutions.map(s => s.word.text).sort((a, b) => a.length - b.length || a.localeCompare(b)).map(w => w.length),
     difficulty: level.difficulty,
     order: level.order,
@@ -64,6 +52,7 @@ export async function getSpecificHint(levelId: number, length: number, indexInGr
         include: {
             solutions: {
                 select: { word: { select: { text: true } } },
+                // Важно: сортировка здесь должна быть такой же, как в getLevelById
                 orderBy: { word: { text: 'asc' } }
             }
         },
