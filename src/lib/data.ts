@@ -7,9 +7,7 @@ type GroupedLevels = {
 };
 
 /**
- * ВОССТАНОВЛЕННАЯ ФУНКЦИЯ
- * Получает список всех уровней. Она все еще нужна для API-роута /api/levels,
- * который может использоваться в будущем или для других целей.
+ * Получает список всех уровней.
  */
 export async function getAllLevels() {
   const levels = await prisma.level.findMany({
@@ -33,7 +31,6 @@ export async function getAllLevels() {
  * Получает все уровни и группирует их по сложности.
  */
 export async function getLevelsGroupedByDifficulty() {
-  console.log('API: Запрос на получение всех уровней, сгруппированных по сложности...');
   const allLevels = await prisma.level.findMany({
     orderBy: [
       { difficulty: 'asc' },
@@ -49,7 +46,6 @@ export async function getLevelsGroupedByDifficulty() {
     },
   });
 
-  // ИСПРАВЛЕНО: Используем правильный тип вместо 'any'
   const grouped: GroupedLevels = {
     EASY: [],
     MEDIUM: [],
@@ -114,7 +110,7 @@ export async function checkWordForLevel(levelId: number, wordToCheck: string): P
 }
 
 /**
- * Возвращает одно из еще не отгаданных слов в качестве подсказки.
+ * Старая функция для получения случайной подсказки.
  */
 export async function getHint(levelId: number, foundWords: string[]): Promise<string | null> {
     const level = await prisma.level.findUnique({
@@ -132,6 +128,35 @@ export async function getHint(levelId: number, foundWords: string[]): Promise<st
     const hint = notFoundWords[Math.floor(Math.random() * notFoundWords.length)];
     return hint;
 }
+
+/**
+ * НОВАЯ ФУНКЦИЯ
+ * Возвращает одно из еще не отгаданных слов ЗАДАННОЙ ДЛИНЫ.
+ */
+export async function getHintByLength(levelId: number, foundWords: string[], length: number): Promise<string | null> {
+    console.log(`API: Запрос подсказки для уровня №${levelId} для слова длиной ${length}...`);
+    const level = await prisma.level.findUnique({
+        where: { id: levelId },
+        include: { solutions: { select: { word: { select: { text: true } } } } },
+    });
+
+    if (!level) return null;
+
+    const allSolutionWords = level.solutions.map(s => s.word.text);
+    
+    // Находим все слова нужной длины, которые еще не были отгаданы
+    const notFoundWordsOfLength = allSolutionWords.filter(word => 
+        !foundWords.includes(word) && word.length === length
+    );
+
+    if (notFoundWordsOfLength.length === 0) return null; // Не найдено слов такой длины
+
+    // Возвращаем случайное из найденных слов нужной длины
+    const hint = notFoundWordsOfLength[Math.floor(Math.random() * notFoundWordsOfLength.length)];
+    console.log(`API: Выдана подсказка '${hint}'.`);
+    return hint;
+}
+
 
 /**
  * Находит ID следующего уровня в той же или следующей категории сложности.

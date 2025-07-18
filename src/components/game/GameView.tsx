@@ -39,7 +39,7 @@ export default function GameView({ levelId }: { levelId: number }) {
   const [usedIndices, setUsedIndices] = useState<number[]>([]);
   const [isShaking, setIsShaking] = useState(false);
   const [isChecking, setIsChecking] = useState(false);
-  
+
   const { progress, addFoundWord } = useProgress();
   const foundWords = useMemo(() => progress[levelId] || [], [progress, levelId]);
 
@@ -51,6 +51,8 @@ export default function GameView({ levelId }: { levelId: number }) {
 
   // Загрузка данных уровня
   useEffect(() => {
+    // Сбрасываем ID следующего уровня при загрузке нового
+    setNextLevelId(null);
     const fetchLevelData = async () => {
       setIsLoading(true);
       setError(null);
@@ -93,7 +95,7 @@ export default function GameView({ levelId }: { levelId: number }) {
     setCurrentWord(currentWord.slice(0, -1));
     setUsedIndices(usedIndices.slice(0, -1));
   };
-  
+
   const clearInput = () => {
     setCurrentWord('');
     setUsedIndices([]);
@@ -127,8 +129,9 @@ export default function GameView({ levelId }: { levelId: number }) {
       setIsChecking(false);
     }
   };
-  
+
   const handleHint = async () => {
+    // Эту логику нужно будет обновить для подсказки по конкретному слову
     if(isChecking) return;
     setIsChecking(true);
     try {
@@ -158,16 +161,17 @@ export default function GameView({ levelId }: { levelId: number }) {
     <div>
       <GameHeader baseWord={levelData.baseWord} isShaking={isShaking} />
       <div className="p-6 border rounded-lg bg-gray-50">
-        {/* Показываем сообщение о победе и кнопку "Следующий уровень" */}
         {isLevelComplete ? (
-          <div className="text-center my-10">
+          <div className="text-center my-10 animate-fade-in">
             <h3 className="text-2xl font-bold text-green-600">Уровень пройден!</h3>
             {nextLevelId ? (
               <Link href={`/game/${nextLevelId}`} className="mt-4 inline-block bg-blue-500 text-white font-bold py-3 px-6 rounded-lg hover:bg-blue-600 transition-transform hover:scale-105">
                 Следующий уровень →
               </Link>
             ) : (
-              <p className="mt-4 text-lg">Вы прошли все уровни в этой секции!</p>
+              <Link href="/" className="mt-4 inline-block bg-gray-500 text-white font-bold py-3 px-6 rounded-lg hover:bg-gray-600 transition-transform hover:scale-105">
+                Вернуться к выбору уровня
+              </Link>
             )}
           </div>
         ) : (
