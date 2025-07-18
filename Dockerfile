@@ -10,6 +10,9 @@ WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
+# Игнорировать отсутствие sha256 для Prisma Engines
+ENV PRISMA_ENGINES_CHECKSUM_IGNORE_MISSING=1
+
 # Генерация Prisma Client и сборка Next.js
 RUN npx prisma generate
 RUN npm run build
