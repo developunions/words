@@ -46,27 +46,6 @@ export async function getLevelById(id: number) {
   };
 }
 
-export async function getSpecificHint(levelId: number, length: number, indexInGroup: number): Promise<string | null> {
-    const level = await prisma.level.findUnique({
-        where: { id: levelId },
-        include: {
-            solutions: {
-                select: { word: { select: { text: true } } },
-                orderBy: { word: { text: 'asc' } }
-            }
-        },
-    });
-
-    if (!level) return null;
-    const wordsOfLength = level.solutions.map(s => s.word.text).filter(word => word.length === length);
-    const hint = wordsOfLength[indexInGroup];
-    if (hint) {
-        console.log(`API: Выдана подсказка '${hint}'.`);
-        return hint;
-    }
-    return null;
-}
-
 export async function getNextLevelId(currentDifficulty: Difficulty, currentOrder: number): Promise<number | null> {
   let nextLevel = await prisma.level.findFirst({
     where: { difficulty: currentDifficulty, order: currentOrder + 1 },
@@ -93,4 +72,49 @@ export async function checkWordForLevel(levelId: number, wordToCheck: string): P
     where: { levelId: levelId, word: { text: wordToCheck } }
   });
   return !!solution;
+}
+
+/**
+ * ВОЗВРАЩЕННАЯ ФУНКЦИЯ
+ * Получает конкретное слово-подсказку по его длине и позиции в группе.
+ */
+export async function getSpecificHint(levelId: number, length: number, indexInGroup: number): Promise<string | null> {
+    const level = await prisma.level.findUnique({
+        where: { id: levelId },
+        include: {
+            solutions: {
+                select: { word: { select: { text: true } } },
+                orderBy: { word: { text: 'asc' } }
+            }
+        },
+    });
+
+    if (!level) return null;
+    const wordsOfLength = level.solutions.map(s => s.word.text).filter(word => word.length === length);
+    const hint = wordsOfLength[indexInGroup];
+    if (hint) {
+        console.log(`API: Выдана подсказка '${hint}'.`);
+        return hint;
+    }
+    return null;
+}
+
+/**
+ * Получает все слова-ответы для указанного уровня (для кнопки "Пройти уровень").
+ */
+export async function getSolutionWordsForLevel(levelId: number): Promise<string[]> {
+  const level = await prisma.level.findUnique({
+    where: { id: levelId },
+    include: {
+      solutions: {
+        select: {
+          word: { select: { text: true } },
+        },
+      },
+    },
+  });
+
+  if (!level) return [];
+
+  return level.solutions.map(s => s.word.text);
 }

@@ -10,20 +10,19 @@ type ProgressState = {
 type ProgressContextType = {
   progress: ProgressState;
   addFoundWord: (levelId: number, word: string) => void;
+  // Новая функция для прохождения уровня
+  completeLevelProgress: (levelId: number, words: string[]) => void;
 };
 
 const ProgressContext = createContext<ProgressContextType | undefined>(undefined);
-
-// Название нашей cookie
 const PROGRESS_COOKIE_NAME = 'word-game-progress';
 
 export function ProgressProvider({ children }: { children: ReactNode }) {
   const [progress, setProgress] = useState<ProgressState>({});
 
-  // При первой загрузке компонента читаем данные из cookie
   useEffect(() => {
     try {
-      const savedProgress = Cookies.get(PROGRESS_COOKIE_NAME); // <-- 2. Читаем cookie
+      const savedProgress = Cookies.get(PROGRESS_COOKIE_NAME);
       if (savedProgress) {
         setProgress(JSON.parse(savedProgress));
       }
@@ -32,20 +31,29 @@ export function ProgressProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
+  const updateProgressAndCookie = (newProgress: ProgressState) => {
+    setProgress(newProgress);
+    Cookies.set(PROGRESS_COOKIE_NAME, JSON.stringify(newProgress), { expires: 365 });
+  };
+
   const addFoundWord = (levelId: number, word: string) => {
     const newProgress = { ...progress };
     const levelProgress = newProgress[levelId] || [];
-
     if (!levelProgress.includes(word)) {
       newProgress[levelId] = [...levelProgress, word];
-      setProgress(newProgress);
-      // 3. Сохраняем прогресс в cookie на 1 год
-      Cookies.set(PROGRESS_COOKIE_NAME, JSON.stringify(newProgress), { expires: 365 });
+      updateProgressAndCookie(newProgress);
     }
   };
 
+  // НОВАЯ ФУНКЦИЯ
+  const completeLevelProgress = (levelId: number, words: string[]) => {
+    const newProgress = { ...progress };
+    newProgress[levelId] = words;
+    updateProgressAndCookie(newProgress);
+  };
+
   return (
-    <ProgressContext.Provider value={{ progress, addFoundWord }}>
+    <ProgressContext.Provider value={{ progress, addFoundWord, completeLevelProgress }}>
       {children}
     </ProgressContext.Provider>
   );

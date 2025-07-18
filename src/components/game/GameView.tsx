@@ -2,14 +2,16 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
+import { useRouter } from 'next/navigation'; // <-- Импортируем useRouter
 import Link from 'next/link';
 import LetterButtons from '@/components/game/LetterButtons';
 import WordGrid from '@/components/game/WordGrid';
 import { useProgress } from '@/context/ProgressContext';
 import GameHeader from '@/components/game/GameHeader';
-import { findNextLevelAction } from '@/app/actions';
+import { findNextLevelAction, completeLevelAction } from '@/app/actions'; // <-- Импортируем новое действие
 import { Difficulty } from '@prisma/client';
 
+// Вспомогательный компонент для поля ввода
 function WordBuilder({ word }: { word: string }) {
   return (
     <div className="my-6 flex justify-center items-center h-16 bg-white border-2 rounded-lg shadow-inner">
@@ -20,6 +22,7 @@ function WordBuilder({ word }: { word: string }) {
   );
 }
 
+// Тип данных, которые мы получаем от API
 type LevelData = {
   id: number;
   baseWord: string;
@@ -29,6 +32,7 @@ type LevelData = {
 };
 
 export default function GameView({ levelId }: { levelId: number }) {
+  const router = useRouter(); // <-- Инициализируем роутер
   const [levelData, setLevelData] = useState<LevelData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -36,13 +40,19 @@ export default function GameView({ levelId }: { levelId: number }) {
   const [usedIndices, setUsedIndices] = useState<number[]>([]);
   const [isShaking, setIsShaking] = useState(false);
   const [isChecking, setIsChecking] = useState(false);
-  const { progress, addFoundWord } = useProgress();
+  
+  // Новые состояния для диалогового окна
+  const [isConfirmingSkip, setIsConfirmingSkip] = useState(false);
+  const [isSkipping, setIsSkipping] = useState(false);
+  
+  const { progress, addFoundWord, completeLevelProgress } = useProgress();
   const foundWords = useMemo(() => progress[levelId] || [], [progress, levelId]);
   const [nextLevelId, setNextLevelId] = useState<number | null>(null);
   const [selectedHintWord, setSelectedHintWord] = useState<string | null>(null);
 
   const isLevelComplete = levelData ? foundWords.length === levelData.solutionWords.length : false;
 
+  // Загрузка данных уровня
   useEffect(() => {
     setNextLevelId(null);
     setSelectedHintWord(null);
@@ -63,6 +73,7 @@ export default function GameView({ levelId }: { levelId: number }) {
     fetchLevelData();
   }, [levelId]);
 
+  // Эффект для поиска следующего уровня
   useEffect(() => {
     if (isLevelComplete && levelData) {
       findNextLevelAction(levelData.difficulty, levelData.order).then(setNextLevelId);
@@ -70,6 +81,26 @@ export default function GameView({ levelId }: { levelId: number }) {
   }, [isLevelComplete, levelData]);
 
   const letters = useMemo(() => levelData?.baseWord.split('') || [], [levelData]);
+
+  // Обработчик досрочного прохождения
+  const handleSkipLevel = async () => {
+    if (!levelData) return;
+    setIsSkipping(true);
+    
+    const { allWords, nextLevelId } = await completeLevelAction(levelId, levelData.difficulty, levelData.order);
+    
+    completeLevelProgress(levelId, allWords);
+    
+    if (nextLevelId) {
+      router.push(`/game/${nextLevelId}`);
+    } else {
+      alert("Поздравляем! Вы прошли все уровни в игре!");
+      router.push('/');
+    }
+    
+    setIsSkipping(false);
+    setIsConfirmingSkip(false);
+  };
 
   const handleHintSelect = (word: string) => {
     if (selectedHintWord === word) {
@@ -137,7 +168,7 @@ export default function GameView({ levelId }: { levelId: number }) {
   return (
     <div>
       <GameHeader baseWord={levelData.baseWord} isShaking={isShaking} />
-      <div className="p-6 border rounded-lg bg-gray-50">
+      <div className="p-6 border rounded-lg bg-gray-50 relative">
         {isLevelComplete ? (
           <div className="text-center my-10 animate-fade-in">
             <h3 className="text-2xl font-bold text-green-600">Уровень пройден!</h3>
@@ -146,15 +177,18 @@ export default function GameView({ levelId }: { levelId: number }) {
                 Следующий уровень →
               </Link>
             ) : (
-              <Link href="/" className="mt-4 inline-block bg-gray-500 text-white font-bold py-3 px-6 rounded-lg hover:bg-gray-600 transition-transform hover:scale-105">
-                Вернуться к выбору уровня
-              </Link>
+               <div className="flex flex-col items-center">
+                 <p className="mt-4 text-lg">Вы прошли все уровни! Поздравляем!</p>
+                 <Link href="/" className="mt-4 inline-block bg-gray-500 text-white font-bold py-3 px-6 rounded-lg hover:bg-gray-600 transition-transform hover:scale-105">
+                   Вернуться к выбору уровня
+                 </Link>
+               </div>
             )}
           </div>
         ) : (
           <>
             <WordGrid 
-              solutionWords={levelData.solutionWords || []} // <-- ИСПРАВЛЕНО
+              solutionWords={levelData.solutionWords} 
               foundWords={foundWords}
               onHintSelect={handleHintSelect}
               selectedHintWord={selectedHintWord}
@@ -169,6 +203,40 @@ export default function GameView({ levelId }: { levelId: number }) {
           <button onClick={handleDeleteLastLetter} title="Удалить" className="p-3 h-14 bg-orange-200 rounded-lg text-2xl" disabled={isChecking}>←</button>
           <button onClick={handleSubmitWord} title="Проверить" className="p-3 h-14 bg-green-200 rounded-lg text-2xl" disabled={isChecking}>✓</button>
         </div>
+
+        {!isLevelComplete && (
+          <div className="text-center mt-8 border-t pt-4">
+            <button 
+              onClick={() => setIsConfirmingSkip(true)}
+              className="text-sm text-gray-500 hover:text-red-600 transition-colors"
+            >
+              Не могу пройти... Пропустить уровень?
+            </button>
+          </div>
+        )}
+
+        {isConfirmingSkip && (
+          <div className="absolute inset-0 bg-white bg-opacity-90 flex flex-col justify-center items-center rounded-lg">
+            <h4 className="text-xl font-bold mb-4">Пропустить уровень?</h4>
+            <p className="text-gray-600 mb-6">Все неотгаданные слова будут открыты.</p>
+            <div className="flex gap-4">
+              <button 
+                onClick={() => setIsConfirmingSkip(false)}
+                disabled={isSkipping}
+                className="px-6 py-2 rounded-lg bg-gray-200 hover:bg-gray-300"
+              >
+                Нет
+              </button>
+              <button 
+                onClick={handleSkipLevel}
+                disabled={isSkipping}
+                className="px-6 py-2 rounded-lg bg-red-500 text-white hover:bg-red-600"
+              >
+                {isSkipping ? 'Пропускаем...' : 'Да, пропустить'}
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
