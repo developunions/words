@@ -10,6 +10,7 @@ import GameHeader from '@/components/game/GameHeader';
 import { findNextLevelAction } from '@/app/actions';
 import { Difficulty } from '@prisma/client';
 
+// Вспомогательный компонент для поля ввода
 function WordBuilder({ word }: { word: string }) {
   return (
     <div className="my-6 flex justify-center items-center h-16 bg-white border-2 rounded-lg shadow-inner">
@@ -20,6 +21,7 @@ function WordBuilder({ word }: { word: string }) {
   );
 }
 
+// Тип данных для уровня
 type LevelData = {
   id: number;
   baseWord: string;

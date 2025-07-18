@@ -1,4 +1,3 @@
-// src/components/game/WordGrid.tsx
 'use client';
 import { useMemo } from 'react';
 
@@ -21,7 +20,7 @@ export default function WordGrid({ wordsLengths, foundWords, onHintSelect, selec
       }
       
       const foundWordIndex = remainingFoundWords.findIndex(w => w.length === length);
-      let wordToShow = null;
+      let wordToShow: string | null = null;
       if (foundWordIndex > -1) {
         wordToShow = remainingFoundWords[foundWordIndex];
         remainingFoundWords.splice(foundWordIndex, 1);
@@ -70,3 +69,4 @@ export default function WordGrid({ wordsLengths, foundWords, onHintSelect, selec
       })}
     </div>
   );
+}
