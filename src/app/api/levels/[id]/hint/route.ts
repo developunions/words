@@ -1,5 +1,7 @@
+// src/app/api/levels/[id]/hint/route.ts
+
 import { NextRequest, NextResponse } from 'next/server';
-import { getHintByLength } from '@/lib/data';
+import { getHint } from '@/lib/data';
 
 export async function POST(
   request: NextRequest,
@@ -12,19 +14,21 @@ export async function POST(
       return new NextResponse('Некорректный ID уровня', { status: 400 });
     }
 
-    const { foundWords, length } = await request.json();
-    if (!Array.isArray(foundWords) || typeof length !== 'number') {
-      return new NextResponse('Некорректный формат запроса', { status: 400 });
+    const { foundWords } = await request.json();
+
+    if (!Array.isArray(foundWords)) {
+      return new NextResponse('Некорректный формат найденных слов', { status: 400 });
     }
 
-    const hint = await getHintByLength(levelId, foundWords, length);
+    const hint = await getHint(levelId, foundWords);
+
     if (hint) {
       return NextResponse.json({ hint });
     } else {
       return new NextResponse('Больше нет слов для подсказки', { status: 404 });
     }
   } catch (error) {
-    console.error('Ошибка при получении подсказки:', error);
+    console.error('Ошибка при получении случайной подсказки:', error);
     return new NextResponse('Внутренняя ошибка сервера', { status: 500 });
   }
 }
