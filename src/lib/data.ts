@@ -1,10 +1,15 @@
+// src/lib/data.ts
 import prisma from '@/lib/prisma';
 import { Difficulty } from '@prisma/client';
 
+// Определяем тип для сгруппированных уровней
 type GroupedLevels = {
   [key in Difficulty]: { id: number; wordCount: number }[];
 };
 
+/**
+ * Получает все уровни и группирует их по сложности для главного экрана.
+ */
 export async function getLevelsGroupedByDifficulty() {
   const allLevels = await prisma.level.findMany({
     orderBy: [{ difficulty: 'asc' }, { order: 'asc' }],
@@ -20,6 +25,10 @@ export async function getLevelsGroupedByDifficulty() {
   return grouped;
 }
 
+/**
+ * Получает данные для одного уровня по его ID.
+ * Ключевое изменение: теперь отдает полный, отсортированный список слов-ответов.
+ */
 export async function getLevelById(id: number) {
   const level = await prisma.level.findUnique({
     where: { id },
@@ -34,47 +43,23 @@ export async function getLevelById(id: number) {
 
   if (!level) return null;
 
+  // Создаем финальный, отсортированный список слов
+  const solutionWords = level.solutions.map(s => s.word.text)
+    .sort((a, b) => a.length - b.length || a.localeCompare(b));
+
   return {
     id: level.id,
     baseWord: level.baseWord,
-    // ИСПРАВЛЕНО: Создаем массив длин из уже отсортированного списка слов
-    wordsLengths: level.solutions.map(s => s.word.text.length),
+    // Передаем клиенту полный список слов-ответов
+    solutionWords: solutionWords,
     difficulty: level.difficulty,
     order: level.order,
-    totalWords: level.solutions.length,
   };
 }
 
-export async function getSpecificHint(levelId: number, length: number, indexInGroup: number): Promise<string | null> {
-    const level = await prisma.level.findUnique({
-        where: { id: levelId },
-        include: {
-            solutions: {
-                select: { word: { select: { text: true } } },
-                // Важно: сортировка здесь должна быть такой же, как в getLevelById
-                orderBy: { word: { text: 'asc' } }
-            }
-        },
-    });
-
-    if (!level) return null;
-
-    // Находим все слова нужной длины в отсортированном списке
-    const wordsOfLength = level.solutions
-        .map(s => s.word.text)
-        .filter(word => word.length === length);
-
-    // Получаем конкретное слово по его индексу в группе
-    const hint = wordsOfLength[indexInGroup];
-
-    if (hint) {
-        console.log(`API: Выдана подсказка '${hint}'.`);
-        return hint;
-    }
-    return null;
-}
-
-
+/**
+ * Находит ID следующего уровня в той же или следующей категории сложности.
+ */
 export async function getNextLevelId(currentDifficulty: Difficulty, currentOrder: number): Promise<number | null> {
   let nextLevel = await prisma.level.findFirst({
     where: { difficulty: currentDifficulty, order: currentOrder + 1 },
@@ -96,6 +81,9 @@ export async function getNextLevelId(currentDifficulty: Difficulty, currentOrder
   return nextLevel?.id || null;
 }
 
+/**
+ * Проверяет, является ли слово правильным для данного уровня.
+ */
 export async function checkWordForLevel(levelId: number, wordToCheck: string): Promise<boolean> {
   const solution = await prisma.levelSolution.findFirst({
     where: { levelId: levelId, word: { text: wordToCheck } }
