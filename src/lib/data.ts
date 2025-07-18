@@ -1,4 +1,3 @@
-// src/lib/data.ts
 import prisma from '@/lib/prisma';
 import { Difficulty } from '@prisma/client';
 
@@ -27,6 +26,7 @@ export async function getLevelById(id: number) {
     include: {
       solutions: {
         select: { word: { select: { text: true } } },
+        // Сортируем слова, чтобы их порядок был предсказуем
         orderBy: { word: { text: 'asc' } }
       },
     },
@@ -37,7 +37,8 @@ export async function getLevelById(id: number) {
   return {
     id: level.id,
     baseWord: level.baseWord,
-    wordsLengths: level.solutions.map(s => s.word.text).sort((a, b) => a.length - b.length || a.localeCompare(b)).map(w => w.length),
+    // ИСПРАВЛЕНО: Создаем массив длин из уже отсортированного списка слов
+    wordsLengths: level.solutions.map(s => s.word.text.length),
     difficulty: level.difficulty,
     order: level.order,
     totalWords: level.solutions.length,
@@ -50,20 +51,29 @@ export async function getSpecificHint(levelId: number, length: number, indexInGr
         include: {
             solutions: {
                 select: { word: { select: { text: true } } },
+                // Важно: сортировка здесь должна быть такой же, как в getLevelById
                 orderBy: { word: { text: 'asc' } }
             }
         },
     });
 
     if (!level) return null;
-    const wordsOfLength = level.solutions.map(s => s.word.text).filter(word => word.length === length);
+
+    // Находим все слова нужной длины в отсортированном списке
+    const wordsOfLength = level.solutions
+        .map(s => s.word.text)
+        .filter(word => word.length === length);
+
+    // Получаем конкретное слово по его индексу в группе
     const hint = wordsOfLength[indexInGroup];
+
     if (hint) {
         console.log(`API: Выдана подсказка '${hint}'.`);
         return hint;
     }
     return null;
 }
+
 
 export async function getNextLevelId(currentDifficulty: Difficulty, currentOrder: number): Promise<number | null> {
   let nextLevel = await prisma.level.findFirst({

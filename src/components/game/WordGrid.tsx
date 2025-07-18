@@ -1,32 +1,52 @@
+// src/components/game/WordGrid.tsx
 'use client';
 import { useMemo } from 'react';
 
 type WordGridProps = {
   wordsLengths: number[];
   foundWords: string[];
-  // Новые props для выбора подсказки
   onHintSelect: (length: number, index: number) => void;
   selectedHintCell: { length: number; index: number } | null;
 };
 
 export default function WordGrid({ wordsLengths, foundWords, onHintSelect, selectedHintCell }: WordGridProps) {
+  
+  // ИСПРАВЛЕНО: Полностью новая, предсказуемая логика для группировки слов
   const groupedWords = useMemo(() => {
-    const remainingFoundWords = [...foundWords];
-    const groups: { [key: number]: { length: number; word: string | null }[] } = {};
-    
+    // Создаем структуру для всех ячеек, отсортированных по длине
+    const allCells: { length: number; word: string | null; indexInGroup: number }[] = [];
+    const lengthCounters: { [key: number]: number } = {};
     wordsLengths.forEach(length => {
-      if (!groups[length]) {
-        groups[length] = [];
+      if (lengthCounters[length] === undefined) {
+        lengthCounters[length] = 0;
       }
-      
-      const foundWordIndex = remainingFoundWords.findIndex(w => w.length === length);
-      let wordToShow: string | null = null;
-      if (foundWordIndex > -1) {
-        wordToShow = remainingFoundWords[foundWordIndex];
-        remainingFoundWords.splice(foundWordIndex, 1);
-      }
-      groups[length].push({ length, word: wordToShow });
+      allCells.push({
+        length: length,
+        word: null,
+        indexInGroup: lengthCounters[length],
+      });
+      lengthCounters[length]++;
     });
+
+    // Заполняем ячейки найденными словами
+    const sortedFoundWords = [...foundWords].sort();
+    sortedFoundWords.forEach(foundWord => {
+      // Ищем первую пустую ячейку с подходящей длиной и вставляем туда слово
+      const cellToFill = allCells.find(cell => cell.length === foundWord.length && cell.word === null);
+      if (cellToFill) {
+        cellToFill.word = foundWord;
+      }
+    });
+
+    // Группируем ячейки по длине для отображения
+    const groups: { [key: number]: typeof allCells } = {};
+    allCells.forEach(cell => {
+      if (!groups[cell.length]) {
+        groups[cell.length] = [];
+      }
+      groups[cell.length].push(cell);
+    });
+    
     return groups;
   }, [wordsLengths, foundWords]);
 
@@ -41,13 +61,13 @@ export default function WordGrid({ wordsLengths, foundWords, onHintSelect, selec
             </h4>
             <div className="flex flex-wrap gap-x-4 gap-y-3">
               {groupedWords[length].map((cell, index) => {
-                const isSelectedForHint = selectedHintCell?.length === length && selectedHintCell?.index === index;
+                const isSelectedForHint = selectedHintCell?.length === length && selectedHintCell?.index === cell.indexInGroup;
                 const isHintable = !cell.word;
 
                 return (
                   <div
-                    key={index}
-                    onClick={() => isHintable && onHintSelect(length, index)}
+                    key={`${length}-${index}`}
+                    onClick={() => isHintable && onHintSelect(length, cell.indexInGroup)}
                     className={`flex gap-1 rounded-md transition-all ${isHintable ? 'cursor-pointer' : ''} ${isSelectedForHint ? 'ring-2 ring-blue-500' : ''}`}
                   >
                     {Array.from({ length: cell.length }).map((_, i) => (
