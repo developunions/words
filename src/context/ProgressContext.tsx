@@ -37,7 +37,7 @@ export function ProgressProvider({ children }: { children: ReactNode }) {
     Cookies.set(PROGRESS_COOKIE_NAME, JSON.stringify(newProgress), { expires: 365 });
   };
 
-  // Старая функция для добавления одного слова
+  // Функция для добавления одного слова
   const addFoundWord = (levelId: number, word: string) => {
     const newProgress = { ...progress };
     const levelProgress = newProgress[levelId] || [];
@@ -47,14 +47,14 @@ export function ProgressProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  // Новая функция для прохождения одного уровня
+  // Функция для прохождения одного уровня
   const completeLevelProgress = (levelId: number, words: string[]) => {
     const newProgress = { ...progress };
     newProgress[levelId] = words;
     updateProgressAndCookie(newProgress);
   };
 
-  // Новая функция для массового обновления прогресса (пройти категорию)
+  // Функция для массового обновления прогресса (пройти категорию)
   const mergeProgress = (progressUpdate: ProgressState) => {
     const newProgress = { ...progress, ...progressUpdate };
     updateProgressAndCookie(newProgress);

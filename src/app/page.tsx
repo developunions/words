@@ -1,3 +1,4 @@
+// src/app/page.tsx
 import HowToPlayModal from '@/components/ui/HowToPlayModal';
 import InteractiveZone from '@/components/layout/InteractiveZone';
 import LevelSelector, { LevelWithStatus } from '@/components/layout/LevelSelector';
@@ -7,33 +8,54 @@ import { cookies } from 'next/headers';
 export const dynamic = 'force-dynamic';
 
 type Progress = { [key: number]: string[] };
+type Level = { id: number; wordCount: number; order: number; };
 
 export default async function HomePage() {
   const levelsByDifficulty = await getLevelsGroupedByDifficulty();
-
-  // Ждём результат cookies()
+  
   const cookieStore = await cookies();
   const progressCookie = cookieStore.get('word-game-progress');
+  const progress: Progress = progressCookie?.value ? JSON.parse(progressCookie.value) : {};
 
-  const progress: Progress = progressCookie?.value
-    ? JSON.parse(progressCookie.value)
-    : {};
-
-  const getLevelStatus = (level: { id: number; wordCount: number }): LevelWithStatus => {
-    const foundWordsCount = progress[level.id]?.length || 0;
-    let status: 'not-started' | 'started' | 'completed' = 'not-started';
-    if (foundWordsCount > 0) {
-      status = foundWordsCount === level.wordCount ? 'completed' : 'started';
+  // Вспомогательная функция для определения статуса уровня
+  const processLevels = (levels: Level[]) => {
+    // Находим порядковый номер последнего полностью пройденного уровня
+    let lastCompletedOrder = 0;
+    for (const level of levels) {
+      if ((progress[level.id]?.length || 0) === level.wordCount) {
+        lastCompletedOrder = Math.max(lastCompletedOrder, level.order);
+      }
     }
-    return { ...level, status };
+
+    // Если все уровни в секции пройдены, делаем последний уровень "играбельным",
+    // чтобы на него можно было зайти снова.
+    if (lastCompletedOrder === levels.length) {
+      lastCompletedOrder = levels.length - 1;
+    }
+
+    // Определяем статус каждого уровня
+    return levels.map(level => {
+      const isCompleted = (progress[level.id]?.length || 0) === level.wordCount;
+      let status: 'completed' | 'playable' | 'locked' = 'locked';
+
+      if (isCompleted) {
+        status = 'completed';
+      } else if (level.order === lastCompletedOrder + 1) {
+        // Следующий уровень после последнего пройденного является играбельным
+        status = 'playable';
+      }
+      
+      return { ...level, status };
+    });
   };
 
-  const easyLevels = levelsByDifficulty.EASY.map(getLevelStatus);
-  const mediumLevels = levelsByDifficulty.MEDIUM.map(getLevelStatus);
-  const hardLevels = levelsByDifficulty.HARD.map(getLevelStatus);
+  const easyLevels = processLevels(levelsByDifficulty.EASY);
+  const mediumLevels = processLevels(levelsByDifficulty.MEDIUM);
+  const hardLevels = processLevels(levelsByDifficulty.HARD);
 
+  // Логика блокировки секций
   const isMediumLocked = easyLevels.some(l => l.status !== 'completed');
-  const isHardLocked   = mediumLevels.some(l => l.status !== 'completed');
+  const isHardLocked = mediumLevels.some(l => l.status !== 'completed');
 
   return (
     <div className="container mx-auto p-4 relative">

@@ -2,9 +2,8 @@
 'use server';
 
 import { getNextLevelId, getSolutionWordsForLevel, getUncompletedLevelsInCategory } from "@/lib/data";
-import { Difficulty, PrismaClient } from "@prisma/client";
-
-const prisma = new PrismaClient(); // Создаем экземпляр Prisma
+import prisma from "@/lib/prisma"; // Используем единый экземпляр Prisma
+import { Difficulty } from "@prisma/client";
 
 type Progress = { [key: number]: string[] };
 
@@ -36,6 +35,7 @@ export async function checkRemainingLevelsAction(difficulty: Difficulty, progres
   const completedLevelIds = Object.entries(progress)
     .filter(([levelId, foundWords]) => {
       const level = allLevelsInCategory.find(l => l.id === Number(levelId));
+      // Уровень считается пройденным, если он есть в прогрессе и количество найденных слов совпадает
       return level && level._count.solutions === foundWords.length;
     })
     .map(([levelId]) => Number(levelId));
@@ -50,6 +50,7 @@ export async function completeCategoryAction(difficulty: Difficulty, progress: P
   const allLevelsInCategory = await prisma.level.findMany({
     where: { difficulty },
     include: { _count: { select: { solutions: true } } },
+    orderBy: { order: 'asc' } // Сортируем для предсказуемости
   });
 
   const completedLevelIds = Object.entries(progress)
@@ -67,7 +68,7 @@ export async function completeCategoryAction(difficulty: Difficulty, progress: P
   }
 
   // Находим следующий уровень после последнего в текущей категории
-  const lastLevelInOrder = allLevelsInCategory.sort((a, b) => b.order - a.order)[0];
+  const lastLevelInOrder = allLevelsInCategory[allLevelsInCategory.length - 1];
   const nextLevelId = await getNextLevelId(difficulty, lastLevelInOrder.order);
 
   return { progressUpdate, nextLevelId };
