@@ -8,7 +8,7 @@ import LetterButtons from '@/components/game/LetterButtons';
 import WordGrid from '@/components/game/WordGrid';
 import { useProgress } from '@/context/ProgressContext';
 import GameHeader from '@/components/game/GameHeader';
-import { findNextLevelAction, completeLevelAction } from '@/app/actions'; // <-- Импортируем новое действие
+import { findNextLevelAction, completeLevelAction, checkRemainingLevelsAction, completeCategoryAction } from '@/app/actions'; // <-- Импортируем все нужные действия
 import { Difficulty } from '@prisma/client';
 
 // Вспомогательный компонент для поля ввода
@@ -41,11 +41,12 @@ export default function GameView({ levelId }: { levelId: number }) {
   const [isShaking, setIsShaking] = useState(false);
   const [isChecking, setIsChecking] = useState(false);
   
-  // Новые состояния для диалогового окна
+  // Новые состояния для диалоговых окон
   const [isConfirmingSkip, setIsConfirmingSkip] = useState(false);
   const [isSkipping, setIsSkipping] = useState(false);
+  const [showComplexSkip, setShowComplexSkip] = useState(false);
   
-  const { progress, addFoundWord, completeLevelProgress } = useProgress();
+  const { progress, addFoundWord, completeLevelProgress, mergeProgress } = useProgress();
   const foundWords = useMemo(() => progress[levelId] || [], [progress, levelId]);
   const [nextLevelId, setNextLevelId] = useState<number | null>(null);
   const [selectedHintWord, setSelectedHintWord] = useState<string | null>(null);
@@ -82,13 +83,24 @@ export default function GameView({ levelId }: { levelId: number }) {
 
   const letters = useMemo(() => levelData?.baseWord.split('') || [], [levelData]);
 
-  // Обработчик досрочного прохождения
-  const handleSkipLevel = async () => {
+  // ОБНОВЛЕННЫЙ ОБРАБОТЧИК: Открывает нужный диалог
+  const handleOpenSkipDialog = async () => {
+    if (!levelData) return;
+    const remainingCount = await checkRemainingLevelsAction(levelData.difficulty, progress);
+    
+    // Если остался только текущий уровень или меньше, показываем простой диалог
+    if (remainingCount <= 1) {
+      setIsConfirmingSkip(true);
+    } else {
+      setShowComplexSkip(true);
+    }
+  };
+
+  // Обработчик для простого пропуска
+  const handleSkipSingleLevel = async () => {
     if (!levelData) return;
     setIsSkipping(true);
-    
     const { allWords, nextLevelId } = await completeLevelAction(levelId, levelData.difficulty, levelData.order);
-    
     completeLevelProgress(levelId, allWords);
     
     if (nextLevelId) {
@@ -102,6 +114,25 @@ export default function GameView({ levelId }: { levelId: number }) {
     setIsConfirmingSkip(false);
   };
 
+  // НОВЫЙ ОБРАБОТЧИК: для пропуска всей категории
+  const handleSkipCategory = async () => {
+    if (!levelData) return;
+    setIsSkipping(true);
+    const { progressUpdate, nextLevelId } = await completeCategoryAction(levelData.difficulty, progress);
+    mergeProgress(progressUpdate);
+
+    if (nextLevelId) {
+      router.push(`/game/${nextLevelId}`);
+    } else {
+      alert("Поздравляем! Вы прошли все уровни в игре!");
+      router.push('/');
+    }
+    
+    setIsSkipping(false);
+    setShowComplexSkip(false);
+  };
+
+  // ... (остальные обработчики остаются без изменений)
   const handleHintSelect = (word: string) => {
     if (selectedHintWord === word) {
       setSelectedHintWord(null);
@@ -207,7 +238,7 @@ export default function GameView({ levelId }: { levelId: number }) {
         {!isLevelComplete && (
           <div className="text-center mt-8 border-t pt-4">
             <button 
-              onClick={() => setIsConfirmingSkip(true)}
+              onClick={handleOpenSkipDialog}
               className="text-sm text-gray-500 hover:text-red-600 transition-colors"
             >
               Не могу пройти... Пропустить уровень?
@@ -215,26 +246,28 @@ export default function GameView({ levelId }: { levelId: number }) {
           </div>
         )}
 
+        {/* Простой диалог */}
         {isConfirmingSkip && (
           <div className="absolute inset-0 bg-white bg-opacity-90 flex flex-col justify-center items-center rounded-lg">
             <h4 className="text-xl font-bold mb-4">Пропустить уровень?</h4>
             <p className="text-gray-600 mb-6">Все неотгаданные слова будут открыты.</p>
             <div className="flex gap-4">
-              <button 
-                onClick={() => setIsConfirmingSkip(false)}
-                disabled={isSkipping}
-                className="px-6 py-2 rounded-lg bg-gray-200 hover:bg-gray-300"
-              >
-                Нет
-              </button>
-              <button 
-                onClick={handleSkipLevel}
-                disabled={isSkipping}
-                className="px-6 py-2 rounded-lg bg-red-500 text-white hover:bg-red-600"
-              >
-                {isSkipping ? 'Пропускаем...' : 'Да, пропустить'}
-              </button>
+              <button onClick={() => setIsConfirmingSkip(false)} disabled={isSkipping} className="px-6 py-2 rounded-lg bg-gray-200 hover:bg-gray-300">Нет</button>
+              <button onClick={handleSkipSingleLevel} disabled={isSkipping} className="px-6 py-2 rounded-lg bg-red-500 text-white hover:bg-red-600">{isSkipping ? 'Пропускаем...' : 'Да, пропустить'}</button>
             </div>
+          </div>
+        )}
+
+        {/* Сложный диалог */}
+        {showComplexSkip && (
+          <div className="absolute inset-0 bg-white bg-opacity-90 flex flex-col justify-center items-center rounded-lg p-4 text-center">
+            <h4 className="text-xl font-bold mb-4">В этой секции есть еще непройденные уровни!</h4>
+            <p className="text-gray-600 mb-6">Вы можете вернуться на главный экран или завершить всю секцию сразу.</p>
+            <div className="flex flex-col sm:flex-row gap-4">
+              <Link href="/" className="px-6 py-2 rounded-lg bg-gray-200 hover:bg-gray-300">На главный экран</Link>
+              <button onClick={handleSkipCategory} disabled={isSkipping} className="px-6 py-2 rounded-lg bg-red-500 text-white hover:bg-red-600">{isSkipping ? 'Завершаем...' : 'Пройти все оставшиеся'}</button>
+            </div>
+             <button onClick={() => setShowComplexSkip(false)} className="mt-4 text-sm text-gray-500 hover:text-black">Отмена</button>
           </div>
         )}
       </div>

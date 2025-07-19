@@ -74,10 +74,6 @@ export async function checkWordForLevel(levelId: number, wordToCheck: string): P
   return !!solution;
 }
 
-/**
- * ВОЗВРАЩЕННАЯ ФУНКЦИЯ
- * Получает конкретное слово-подсказку по его длине и позиции в группе.
- */
 export async function getSpecificHint(levelId: number, length: number, indexInGroup: number): Promise<string | null> {
     const level = await prisma.level.findUnique({
         where: { id: levelId },
@@ -93,15 +89,11 @@ export async function getSpecificHint(levelId: number, length: number, indexInGr
     const wordsOfLength = level.solutions.map(s => s.word.text).filter(word => word.length === length);
     const hint = wordsOfLength[indexInGroup];
     if (hint) {
-        console.log(`API: Выдана подсказка '${hint}'.`);
         return hint;
     }
     return null;
 }
 
-/**
- * Получает все слова-ответы для указанного уровня (для кнопки "Пройти уровень").
- */
 export async function getSolutionWordsForLevel(levelId: number): Promise<string[]> {
   const level = await prisma.level.findUnique({
     where: { id: levelId },
@@ -115,6 +107,28 @@ export async function getSolutionWordsForLevel(levelId: number): Promise<string[
   });
 
   if (!level) return [];
-
   return level.solutions.map(s => s.word.text);
+}
+
+/**
+ * НОВАЯ ФУНКЦИЯ, КОТОРАЯ БЫЛА ПРОПУЩЕНА
+ * Находит все уровни в категории, которые еще не пройдены.
+ */
+export async function getUncompletedLevelsInCategory(difficulty: Difficulty, completedLevelIds: number[]) {
+  const levels = await prisma.level.findMany({
+    where: {
+      difficulty: difficulty,
+      id: {
+        notIn: completedLevelIds, // Исключаем уже пройденные
+      },
+    },
+    include: {
+      solutions: {
+        select: {
+          word: { select: { text: true } },
+        },
+      },
+    },
+  });
+  return levels;
 }

@@ -10,8 +10,8 @@ type ProgressState = {
 type ProgressContextType = {
   progress: ProgressState;
   addFoundWord: (levelId: number, word: string) => void;
-  // Новая функция для прохождения уровня
   completeLevelProgress: (levelId: number, words: string[]) => void;
+  mergeProgress: (progressUpdate: ProgressState) => void;
 };
 
 const ProgressContext = createContext<ProgressContextType | undefined>(undefined);
@@ -31,11 +31,13 @@ export function ProgressProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
+  // Вспомогательная функция, чтобы не дублировать код
   const updateProgressAndCookie = (newProgress: ProgressState) => {
     setProgress(newProgress);
     Cookies.set(PROGRESS_COOKIE_NAME, JSON.stringify(newProgress), { expires: 365 });
   };
 
+  // Старая функция для добавления одного слова
   const addFoundWord = (levelId: number, word: string) => {
     const newProgress = { ...progress };
     const levelProgress = newProgress[levelId] || [];
@@ -45,15 +47,21 @@ export function ProgressProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  // НОВАЯ ФУНКЦИЯ
+  // Новая функция для прохождения одного уровня
   const completeLevelProgress = (levelId: number, words: string[]) => {
     const newProgress = { ...progress };
     newProgress[levelId] = words;
     updateProgressAndCookie(newProgress);
   };
 
+  // Новая функция для массового обновления прогресса (пройти категорию)
+  const mergeProgress = (progressUpdate: ProgressState) => {
+    const newProgress = { ...progress, ...progressUpdate };
+    updateProgressAndCookie(newProgress);
+  };
+
   return (
-    <ProgressContext.Provider value={{ progress, addFoundWord, completeLevelProgress }}>
+    <ProgressContext.Provider value={{ progress, addFoundWord, completeLevelProgress, mergeProgress }}>
       {children}
     </ProgressContext.Provider>
   );
